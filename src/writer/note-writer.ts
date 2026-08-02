@@ -43,6 +43,37 @@ export class NoteWriter {
 		private readonly settings: BookMetasearchSettings,
 	) {}
 
+	/**
+	 * Refresh an existing note's frontmatter with fresh data from a provider,
+	 * preserving user edits in the body and any manually-added frontmatter
+	 * keys. Only the provider-derived fields are overwritten.
+	 */
+	async update(file: TFile, book: Book): Promise<void> {
+		const filename = file.basename;
+		const localCover = book.coverUrl
+			? `${this.settings.coverFolder}/${filename}.jpg`
+			: '';
+		const isbnCombined = [book.isbn10, book.isbn13].filter(Boolean).join(' ');
+
+		await this.app.fileManager.processFrontMatter(file, (fm) => {
+			fm.type = 'reference';
+			fm.title = book.title;
+			fm.subtitle = book.subtitle ?? '';
+			fm.author = book.authors;
+			fm.authors = book.translators ?? [];
+			fm.category = book.categoryLeaf ? [book.categoryLeaf] : [];
+			fm.categories = book.categories ?? [];
+			if (book.publisher) fm.publisher = book.publisher;
+			if (book.publishYear) fm.publish = book.publishYear;
+			fm.total = book.pageCount ?? '';
+			if (isbnCombined) fm.isbn = isbnCombined;
+			if (book.coverUrl) fm.cover = book.coverUrl;
+			if (localCover) fm.localCover = localCover;
+			fm.provider = book.provider;
+			if (book.providerUrl) fm.provider_url = book.providerUrl;
+		});
+	}
+
 	async create(book: Book): Promise<TFile> {
 		const folder = normalizePath(this.settings.notesFolder);
 		const filename = this.buildFilename(book);

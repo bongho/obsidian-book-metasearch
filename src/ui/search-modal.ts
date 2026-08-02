@@ -25,6 +25,7 @@ export class BookSearchModal extends SuggestModal<Book> {
 		private readonly registry: ProviderRegistry,
 		private readonly priorityOrder: string[],
 		private readonly onPick: BookPickHandler,
+		private readonly initialQuery: string = '',
 	) {
 		super(app);
 		this.setPlaceholder('책 제목 또는 저자를 입력하세요 (Aladin)');
@@ -33,6 +34,14 @@ export class BookSearchModal extends SuggestModal<Book> {
 			{ command: '↵', purpose: '노트 생성' },
 			{ command: 'esc', purpose: '취소' },
 		]);
+	}
+
+	onOpen(): void {
+		super.onOpen();
+		if (this.initialQuery) {
+			this.inputEl.value = this.initialQuery;
+			this.inputEl.dispatchEvent(new Event('input'));
+		}
 	}
 
 	async getSuggestions(query: string): Promise<Book[]> {
