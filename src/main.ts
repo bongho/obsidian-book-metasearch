@@ -31,7 +31,6 @@ export default class BookMetasearchPlugin extends Plugin {
 	writer!: NoteWriter;
 
 	async onload(): Promise<void> {
-		console.log('[book-metasearch] loading v' + this.manifest.version);
 		await this.loadSettings();
 
 		this.registry = new ProviderRegistry();
@@ -87,12 +86,9 @@ export default class BookMetasearchPlugin extends Plugin {
 			callback: () => this.openMigrationHelper(),
 		});
 
-		console.log('[book-metasearch] loaded');
 	}
 
-	onunload(): void {
-		console.log('[book-metasearch] unloaded');
-	}
+	onunload(): void {}
 
 	async loadSettings(): Promise<void> {
 		const loaded = (await this.loadData()) as Partial<BookMetasearchSettings> | null;

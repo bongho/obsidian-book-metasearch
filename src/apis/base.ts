@@ -53,8 +53,8 @@ export interface Book {
  * Search options passed to `BookProvider.searchByQuery`.
  */
 export interface SearchOptions {
-	/** Preferred locale for the provider (e.g. Google Books `langRestrict`). */
-	locale?: 'ko' | 'en' | 'ja' | string;
+	/** Preferred locale for the provider (e.g. Google Books `langRestrict`). ISO 639-1 code. */
+	locale?: string;
 	/** Max results per provider. Aladin hard cap: 50. Kakao: 50. */
 	maxResults?: number;
 	/** Filter by media type (Aladin SearchTarget: Book/eBook/All). */

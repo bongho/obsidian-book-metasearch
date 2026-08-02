@@ -15,8 +15,8 @@ export function sanitizeFilename(input: string): string {
 	let s = input;
 	// Replace disallowed chars with spaces (preserve word separation)
 	s = s.replace(/[/\\:*?"<>|]/g, ' ');
-	// Remove ASCII control chars
-	// eslint-disable-next-line no-control-regex
+	// Remove ASCII control chars.
+	// eslint-disable-next-line no-control-regex -- intentional: control chars are exactly what we want to strip
 	s = s.replace(/[\x00-\x1f\x7f]/g, '');
 	// Collapse repeated whitespace
 	s = s.replace(/\s+/g, ' ').trim();

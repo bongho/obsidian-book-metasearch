@@ -34,7 +34,8 @@ interface GBookVolumeInfo {
 	publishedDate?: string;
 	description?: string;
 	industryIdentifiers?: Array<{
-		type: 'ISBN_10' | 'ISBN_13' | 'OTHER' | string;
+		/** Google Books uses 'ISBN_10' | 'ISBN_13' | 'OTHER' but other values appear in practice. */
+		type: string;
 		identifier: string;
 	}>;
 	pageCount?: number;

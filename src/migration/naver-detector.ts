@@ -17,8 +17,11 @@ export interface AnpigonSettings {
 	localePreference?: string;
 }
 
-const ANPIGON_DATA_PATH =
-	'.obsidian/plugins/obsidian-book-search-plugin/data.json';
+const ANPIGON_PLUGIN_ID = 'obsidian-book-search-plugin';
+
+function anpigonDataPath(app: App): string {
+	return `${app.vault.configDir}/plugins/${ANPIGON_PLUGIN_ID}/data.json`;
+}
 
 /**
  * Read anpigon's persisted settings. Returns null in every failure mode
@@ -29,9 +32,10 @@ export async function detectAnpigon(
 	app: App,
 ): Promise<AnpigonSettings | null> {
 	try {
-		const exists = await app.vault.adapter.exists(ANPIGON_DATA_PATH);
+		const path = anpigonDataPath(app);
+		const exists = await app.vault.adapter.exists(path);
 		if (!exists) return null;
-		const raw = await app.vault.adapter.read(ANPIGON_DATA_PATH);
+		const raw = await app.vault.adapter.read(path);
 		const parsed = JSON.parse(raw) as unknown;
 		if (!isRecord(parsed)) return null;
 		return parsed;

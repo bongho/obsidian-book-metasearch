@@ -35,7 +35,7 @@ export class BookSearchModal extends SuggestModal<Book> {
 	}
 
 	onOpen(): void {
-		super.onOpen();
+		void super.onOpen();
 		if (this.initialQuery) {
 			this.inputEl.value = this.initialQuery;
 			this.inputEl.dispatchEvent(new Event('input'));
@@ -119,13 +119,15 @@ export class BookSearchModal extends SuggestModal<Book> {
 		}
 	}
 
-	async onChooseSuggestion(book: Book): Promise<void> {
-		try {
-			await this.onPick(book);
-		} catch (e) {
-			const msg = e instanceof Error ? e.message : String(e);
-			new Notice(`노트 생성 실패: ${msg}`);
-		}
+	onChooseSuggestion(book: Book): void {
+		void (async () => {
+			try {
+				await this.onPick(book);
+			} catch (e) {
+				const msg = e instanceof Error ? e.message : String(e);
+				new Notice(`노트 생성 실패: ${msg}`);
+			}
+		})();
 	}
 
 	onClose(): void {
