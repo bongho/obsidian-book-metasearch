@@ -76,7 +76,7 @@ export class MigrationModal extends Modal {
 					.setButtonText('발급 페이지 열기')
 					.setCta()
 					.onClick(() => {
-						window.open('https://www.aladin.co.kr/ttb/wblogmain.aspx');
+						window.open('https://www.aladin.co.kr/ttb/wblog_manage.aspx');
 					}),
 			);
 
@@ -173,14 +173,12 @@ export class MigrationModal extends Modal {
 			)
 			.addButton((btn) =>
 				btn
-					.setButtonText('마이그레이션 완료')
+					.setButtonText('완료')
 					.setCta()
 					.onClick(async () => {
 						this.deps.settings.aladinTtbKey = this.ttbKeyInput;
-						this.deps.settings.migrationCompletedAt =
-							new Date().toISOString();
 						await this.deps.saveSettings();
-						new Notice('마이그레이션 완료 — 이제 검색을 사용하실 수 있습니다.');
+						new Notice('설정 저장 완료 — 이제 검색을 사용하실 수 있습니다.');
 						this.close();
 					}),
 			);

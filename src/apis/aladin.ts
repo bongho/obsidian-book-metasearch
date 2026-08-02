@@ -14,7 +14,7 @@ import { parseAladinCategory } from '../util/aladin-category-parser';
  * Aladin Open API (알라딘 오픈 API).
  *
  * Docs: https://blog.aladin.co.kr/openapi/
- * TTB Key: https://www.aladin.co.kr/ttb/wblogmain.aspx
+ * TTB Key: https://www.aladin.co.kr/ttb/wblog_manage.aspx
  *
  * Notable:
  * - HTTPS-only endpoints (HTTP → 301 redirect).
@@ -79,7 +79,7 @@ export class AladinProvider implements BookProvider {
 				ok: false,
 				code: 'AUTH_MISSING',
 				message: 'TTB Key가 설정되지 않았습니다.',
-				docsUrl: 'https://www.aladin.co.kr/ttb/wblogmain.aspx',
+				docsUrl: 'https://www.aladin.co.kr/ttb/wblog_manage.aspx',
 			};
 		}
 		try {
@@ -201,7 +201,7 @@ export class AladinProvider implements BookProvider {
 					ok: false,
 					code: 'AUTH_INVALID',
 					message: msg ?? 'TTB Key가 유효하지 않습니다.',
-					docsUrl: 'https://www.aladin.co.kr/ttb/wblogmain.aspx',
+					docsUrl: 'https://www.aladin.co.kr/ttb/wblog_manage.aspx',
 				};
 			case 7:
 				return {

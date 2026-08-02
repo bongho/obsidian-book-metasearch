@@ -60,8 +60,28 @@ export class NoteWriter {
 	}
 
 	private buildFilename(book: Book): string {
-		const author = book.authors[0] ?? '저자미상';
-		return sanitizeFilename(`${book.title} - ${author}`);
+		const template = this.settings.fileNameFormat || '{{title}} - {{author}}';
+		const rendered = template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => {
+			switch (key) {
+				case 'title':
+					return book.title;
+				case 'subtitle':
+					return book.subtitle ?? '';
+				case 'author':
+					return book.authors[0] ?? '저자미상';
+				case 'authors':
+					return book.authors.join(', ');
+				case 'publisher':
+					return book.publisher ?? '';
+				case 'publishYear':
+					return book.publishYear ?? '';
+				case 'isbn':
+					return book.isbn13 || book.isbn10 || '';
+				default:
+					return '';
+			}
+		});
+		return sanitizeFilename(rendered);
 	}
 
 	private render(book: Book, filenameStem: string): string {

@@ -2,7 +2,7 @@ import { Notice, Plugin } from 'obsidian';
 
 import { AladinProvider } from './apis/aladin';
 import { ProviderRegistry } from './apis/registry';
-import { detectAnpigon, isNaverStuck } from './migration/naver-detector';
+import { detectAnpigon } from './migration/naver-detector';
 import { BookMetasearchSettings, DEFAULT_SETTINGS } from './settings';
 import { MigrationModal } from './ui/migration-modal';
 import { BookSearchModal } from './ui/search-modal';
@@ -13,7 +13,7 @@ import { NoteWriter } from './writer/note-writer';
  * Book Metasearch — Obsidian plugin.
  *
  * Sprint S1 covers: BookProvider abstraction, Aladin search+lookup, search UI,
- * bongho-schema note writer, and Naver EOL migration UX.
+ * bongho-schema note writer, opt-in Naver EOL migration UX (Settings button).
  * Kakao / Google Books / Open Library land in S2.
  */
 export default class BookMetasearchPlugin extends Plugin {
@@ -36,23 +36,13 @@ export default class BookMetasearchPlugin extends Plugin {
 		this.addCommand({
 			id: 'add-book',
 			name: 'Add book',
-			callback: () => {
-				new BookSearchModal(
-					this.app,
-					this.registry,
-					this.settings.priorityOrder,
-					async (book) => {
-						const file = await this.writer.create(book);
-						await this.app.workspace.getLeaf().openFile(file);
-						new Notice(`노트 생성: ${file.path}`);
-					},
-				).open();
-			},
+			callback: () => this.openSearchModal(),
 		});
 
-		// Naver EOL migration UX — trigger once per install after layout is ready.
-		this.app.workspace.onLayoutReady(() => {
-			void this.maybeShowMigration();
+		this.addCommand({
+			id: 'open-naver-migration',
+			name: 'Open Naver → Aladin migration helper',
+			callback: () => this.openMigrationHelper(),
 		});
 
 		console.log('[book-metasearch] loaded');
@@ -71,12 +61,28 @@ export default class BookMetasearchPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	private async maybeShowMigration(): Promise<void> {
-		if (this.settings.migrationCompletedAt) return;
-		const anpigon = await detectAnpigon(this.app);
-		if (!isNaverStuck(anpigon)) return;
-		if (!anpigon) return;
+	openSearchModal(): void {
+		new BookSearchModal(
+			this.app,
+			this.registry,
+			this.settings.priorityOrder,
+			async (book) => {
+				const file = await this.writer.create(book);
+				if (this.settings.openNoteAfterCreate) {
+					await this.app.workspace.getLeaf().openFile(file);
+				}
+				new Notice(`노트 생성: ${file.path}`);
+			},
+		).open();
+	}
 
+	/**
+	 * On-demand migration helper. Invoked from Settings tab or command palette
+	 * — never auto-triggered on load. If anpigon is not installed, we still
+	 * open the modal with an empty snapshot so users can register a TTB Key.
+	 */
+	async openMigrationHelper(): Promise<void> {
+		const anpigon = (await detectAnpigon(this.app)) ?? {};
 		new MigrationModal(this.app, {
 			settings: this.settings,
 			saveSettings: () => this.saveSettings(),
