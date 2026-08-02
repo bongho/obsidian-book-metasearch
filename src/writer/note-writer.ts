@@ -102,9 +102,9 @@ export class NoteWriter {
 		lines.push(`created: ${created}`);
 		lines.push('status: inProgress');
 		lines.push(`title: ${yamlQuote(book.title)}`);
-		if (book.subtitle) {
-			lines.push(`subtitle: ${yamlQuote(book.subtitle)}`);
-		}
+		// Always emit subtitle field (empty string when absent) — matches bongho
+		// vault convention so Bases/Dataview queries stay consistent.
+		lines.push(`subtitle: ${yamlQuote(book.subtitle ?? '')}`);
 		lines.push(`author: ${yamlArray(book.authors)}`);
 		lines.push(`authors: ${yamlArray(book.translators ?? [])}`);
 		if (book.categoryLeaf) {
@@ -119,9 +119,8 @@ export class NoteWriter {
 		if (book.publishYear) {
 			lines.push(`publish: ${book.publishYear}`);
 		}
-		if (typeof book.pageCount === 'number') {
-			lines.push(`total: ${book.pageCount}`);
-		}
+		// Always emit total field (empty when Aladin doesn't provide itemPage).
+		lines.push(`total: ${book.pageCount ?? ''}`);
 		if (isbnCombined) {
 			lines.push(`isbn: ${yamlQuote(isbnCombined)}`);
 		}
@@ -139,15 +138,6 @@ export class NoteWriter {
 		lines.push('');
 		lines.push(`# 📚 Book Reference — ${book.title}`);
 		lines.push('');
-		lines.push('## Why to Read');
-		lines.push('- ');
-		lines.push('');
-		lines.push('## Abstract / Description');
-		lines.push('');
-		if (book.description) {
-			lines.push(book.description);
-			lines.push('');
-		}
 		lines.push('<!-- BOOKSEARCH:AUTO-START -->');
 		lines.push('<!-- BOOKSEARCH:AUTO-END -->');
 

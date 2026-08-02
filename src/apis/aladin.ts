@@ -231,7 +231,10 @@ export class AladinProvider implements BookProvider {
 			publisher: item.publisher,
 			publishDate: item.pubDate,
 			publishYear: item.pubDate?.slice(0, 4),
-			isbn10: item.isbn,
+			// Aladin's `isbn` field is sometimes an internal K-code (e.g. "K792138300"
+			// for eBooks or partner-only items) rather than a real ISBN10. Only
+			// keep it when it looks like an ISBN10 (9 digits + [0-9X]).
+			isbn10: isRealIsbn10(item.isbn) ? item.isbn : undefined,
 			isbn13: item.isbn13,
 			pageCount: item.subInfo?.itemPage,
 			language: 'ko',
@@ -267,4 +270,14 @@ function mapTargetType(t: SearchOptions['targetType']): string {
 
 function stripHtml(s: string): string {
 	return s.replace(/<[^>]+>/g, '').trim();
+}
+
+/**
+ * ISBN10 shape: 9 digits + [0-9X]. Aladin sometimes returns internal K-codes
+ * (e.g. "K792138300") in the `isbn` field for eBooks / partner-exclusive items.
+ * We filter those out so downstream note-writers don't emit a bogus ISBN.
+ */
+function isRealIsbn10(s: string | undefined): boolean {
+	if (!s) return false;
+	return /^[0-9]{9}[0-9X]$/i.test(s);
 }
