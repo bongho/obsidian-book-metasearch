@@ -42,12 +42,13 @@ export class BookSearchModal extends SuggestModal<Book> {
 		const cached = this.cache.get(trimmed);
 		if (cached) return cached;
 
-		// Debounce — collapse rapid keystrokes to a single network call.
+		// Mark this query as the latest in-flight BEFORE debouncing.
+		// If the user keeps typing, later callbacks will overwrite
+		// `inflightQuery`, so this callback bails out post-debounce.
+		this.inflightQuery = trimmed;
 		await this.debounce(200);
-		// If user typed more in the meantime, drop this callback silently.
 		if (this.inflightQuery !== trimmed) return [];
 
-		this.inflightQuery = trimmed;
 		try {
 			const opts: SearchOptions = { maxResults: 20, locale: 'ko' };
 			const books = await this.registry.sequential(
@@ -59,6 +60,7 @@ export class BookSearchModal extends SuggestModal<Book> {
 			return books;
 		} catch (e) {
 			const msg = e instanceof Error ? e.message : String(e);
+			console.error('[book-metasearch] search failed', e);
 			new Notice(`검색 실패: ${msg}`);
 			return [];
 		}
