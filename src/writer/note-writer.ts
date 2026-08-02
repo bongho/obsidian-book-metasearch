@@ -61,25 +61,30 @@ export class NoteWriter {
 			.filter(Boolean)
 			.join(' ');
 
-		const k = (canonicalKey: string) => keyOf(canonicalKey, kind);
+		const updates: Record<string, unknown> = {
+			[keyOf('type', kind)]: 'reference',
+			[keyOf('title', kind)]: book.title,
+			[keyOf('subtitle', kind)]: book.subtitle ?? '',
+			[keyOf('author', kind)]: book.authors,
+			[keyOf('authors', kind)]: book.translators ?? [],
+			[keyOf('category', kind)]: book.categoryLeaf ? [book.categoryLeaf] : [],
+			[keyOf('categories', kind)]: book.categories ?? [],
+			[keyOf('total', kind)]: book.pageCount ?? '',
+			[keyOf('provider', kind)]: book.provider,
+		};
+		if (book.publisher) updates[keyOf('publisher', kind)] = book.publisher;
+		if (book.publishYear) updates[keyOf('publish', kind)] = book.publishYear;
+		if (isbnCombined) updates[keyOf('isbn', kind)] = isbnCombined;
+		if (book.coverUrl) updates[keyOf('cover', kind)] = book.coverUrl;
+		if (localCover) updates[keyOf('localCover', kind)] = localCover;
+		if (book.providerUrl) updates[keyOf('providerUrl', kind)] = book.providerUrl;
 
-		await this.app.fileManager.processFrontMatter(file, (fm) => {
-			fm[k('type')] = 'reference';
-			fm[k('title')] = book.title;
-			fm[k('subtitle')] = book.subtitle ?? '';
-			fm[k('author')] = book.authors;
-			fm[k('authors')] = book.translators ?? [];
-			fm[k('category')] = book.categoryLeaf ? [book.categoryLeaf] : [];
-			fm[k('categories')] = book.categories ?? [];
-			if (book.publisher) fm[k('publisher')] = book.publisher;
-			if (book.publishYear) fm[k('publish')] = book.publishYear;
-			fm[k('total')] = book.pageCount ?? '';
-			if (isbnCombined) fm[k('isbn')] = isbnCombined;
-			if (book.coverUrl) fm[k('cover')] = book.coverUrl;
-			if (localCover) fm[k('localCover')] = localCover;
-			fm[k('provider')] = book.provider;
-			if (book.providerUrl) fm[k('providerUrl')] = book.providerUrl;
-		});
+		await this.app.fileManager.processFrontMatter(
+			file,
+			(fm: Record<string, unknown>) => {
+				Object.assign(fm, updates);
+			},
+		);
 
 		if (this.settings.enableCoverImageSave && book.coverUrl) {
 			void this.downloadCover(book.coverUrl, filename);
@@ -353,7 +358,7 @@ function yamlQuote(s: string): string {
 }
 
 function yamlScalar(s: string): string {
-	if (/[:#\-\[\]{}&*!|>'"%@`,\n]/.test(s) || s.trim() !== s) {
+	if (/[:#[\]{}&*!|>'"%@`,\n-]/.test(s) || s.trim() !== s) {
 		return yamlQuote(s);
 	}
 	return s;

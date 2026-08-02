@@ -99,7 +99,7 @@ export class BookSearchModal extends SuggestModal<Book> {
 		const titleLine = body.createDiv({ cls: 'bm-title' });
 		titleLine.setText(book.title);
 		if (book.subtitle) {
-			titleLine.createEl('span', {
+			titleLine.createSpan({
 				text: ` — ${book.subtitle}`,
 				cls: 'bm-subtitle',
 			});

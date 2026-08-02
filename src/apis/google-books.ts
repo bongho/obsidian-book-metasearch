@@ -7,6 +7,7 @@ import type {
 	SearchOptions,
 } from './base';
 import { ProviderError } from './base';
+import { stripHtml } from '../util/html';
 
 /**
  * Google Books API.
@@ -209,10 +210,6 @@ export class GoogleBooksProvider implements BookProvider {
 function clampMax(n: number | undefined): number {
 	if (typeof n !== 'number' || !Number.isFinite(n)) return 10;
 	return Math.max(1, Math.min(40, Math.trunc(n)));
-}
-
-function stripHtml(s: string): string {
-	return s.replace(/<[^>]+>/g, '').trim();
 }
 
 /**

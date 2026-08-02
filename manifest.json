@@ -2,7 +2,7 @@
 	"id": "obsidian-book-metasearch",
 	"name": "Book Metasearch",
 	"version": "0.1.0",
-	"minAppVersion": "1.4.0",
+	"minAppVersion": "1.4.4",
 	"description": "Book note maker with metasearch across Aladin, Kakao, Google Books, and Open Library. Successor to anpigon/obsidian-book-search-plugin (Naver EOL 2026-08-01).",
 	"author": "BongHo Lee",
 	"authorUrl": "https://github.com/bongho",

@@ -34,7 +34,7 @@ export async function detectAnpigon(
 		const raw = await app.vault.adapter.read(ANPIGON_DATA_PATH);
 		const parsed = JSON.parse(raw) as unknown;
 		if (!isRecord(parsed)) return null;
-		return parsed as AnpigonSettings;
+		return parsed;
 	} catch (e) {
 		console.warn('[book-metasearch] anpigon detection failed', e);
 		return null;

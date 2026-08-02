@@ -43,7 +43,7 @@ export class MigrationModal extends Modal {
 			text: '네이버 도서 검색 API 종료 안내',
 		});
 
-		const intro = contentEl.createEl('div', {
+		const intro = contentEl.createDiv({
 			cls: 'setting-item-description',
 		});
 		intro.createSpan({

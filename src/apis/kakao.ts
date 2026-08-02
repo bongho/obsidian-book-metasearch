@@ -7,6 +7,7 @@ import type {
 	SearchOptions,
 } from './base';
 import { ProviderError } from './base';
+import { splitIsbnPair } from '../util/isbn';
 
 /**
  * Kakao (다음) Book Search API.
@@ -184,7 +185,7 @@ export class KakaoProvider implements BookProvider {
 	}
 
 	private normalize(doc: KakaoDocument): Book {
-		const { isbn10, isbn13 } = splitKakaoIsbn(doc.isbn);
+		const { isbn10, isbn13 } = splitIsbnPair(doc.isbn);
 		const publishDate = doc.datetime?.slice(0, 10); // YYYY-MM-DD
 		return {
 			title: doc.title,
@@ -213,27 +214,4 @@ export class KakaoProvider implements BookProvider {
 function clampSize(n: number | undefined): number {
 	if (typeof n !== 'number' || !Number.isFinite(n)) return 10;
 	return Math.max(1, Math.min(50, Math.trunc(n)));
-}
-
-/**
- * Kakao returns ISBN as a single space-separated field: "isbn10 isbn13".
- * Sometimes only one form is present. We split by whitespace and pick each
- * by length.
- */
-function splitKakaoIsbn(raw: string | undefined): {
-	isbn10?: string;
-	isbn13?: string;
-} {
-	if (!raw) return {};
-	const parts = raw
-		.split(/\s+/)
-		.map((s) => s.replace(/[^0-9Xx]/g, ''))
-		.filter(Boolean);
-	let isbn10: string | undefined;
-	let isbn13: string | undefined;
-	for (const p of parts) {
-		if (p.length === 10 && /^[0-9]{9}[0-9X]$/i.test(p)) isbn10 = p;
-		if (p.length === 13 && /^[0-9]{13}$/.test(p)) isbn13 = p;
-	}
-	return { isbn10, isbn13 };
 }

@@ -7,6 +7,8 @@ import type {
 	SearchOptions,
 } from './base';
 import { ProviderError } from './base';
+import { isRealIsbn10, isRealIsbn13 } from '../util/isbn';
+import { iso6391to6392, iso6392to6391 } from '../util/language';
 
 /**
  * Open Library (openlibrary.org) — Internet Archive의 open library data.
@@ -53,54 +55,6 @@ interface OLSearchResponse {
 	docs?: OLDoc[];
 }
 
-// Language mapping: ISO 639-2 (Open Library) → ISO 639-1 (our canonical form).
-const LANG_MAP: Record<string, string> = {
-	eng: 'en',
-	kor: 'ko',
-	jpn: 'ja',
-	chi: 'zh',
-	fre: 'fr',
-	fra: 'fr',
-	ger: 'de',
-	deu: 'de',
-	spa: 'es',
-	ita: 'it',
-	por: 'pt',
-	rus: 'ru',
-	ara: 'ar',
-	hin: 'hi',
-	dut: 'nl',
-	nld: 'nl',
-	pol: 'pl',
-	tur: 'tr',
-	swe: 'sv',
-	dan: 'da',
-	fin: 'fi',
-	nor: 'no',
-	tha: 'th',
-	vie: 'vi',
-	ind: 'id',
-	heb: 'he',
-	gre: 'el',
-	ell: 'el',
-	cze: 'cs',
-	ces: 'cs',
-	hun: 'hu',
-	rom: 'ro',
-	ron: 'ro',
-	ukr: 'uk',
-	bul: 'bg',
-	cat: 'ca',
-	hrv: 'hr',
-	slo: 'sk',
-	slk: 'sk',
-	slv: 'sl',
-	srp: 'sr',
-	est: 'et',
-	lav: 'lv',
-	lit: 'lt',
-};
-
 export class OpenLibraryProvider implements BookProvider {
 	readonly id = 'openlibrary';
 	readonly displayName = 'Open Library';
@@ -134,8 +88,7 @@ export class OpenLibraryProvider implements BookProvider {
 			'key,title,subtitle,author_name,publisher,publish_date,first_publish_year,isbn,cover_i,subject,language,number_of_pages_median,edition_count',
 		);
 		if (opts.locale) {
-			// Open Library expects 3-letter codes; approximate reverse lookup
-			const three = to3LetterLang(opts.locale);
+			const three = iso6391to6392(opts.locale);
 			if (three) url.searchParams.set('language', three);
 		}
 		const res = await requestUrl({
@@ -200,17 +153,13 @@ export class OpenLibraryProvider implements BookProvider {
 		const isbnList = (doc.isbn ?? [])
 			.map((s) => s.replace(/[^0-9Xx]/g, ''))
 			.filter(Boolean);
-		const isbn10 = isbnList.find(
-			(x) => x.length === 10 && /^[0-9]{9}[0-9X]$/i.test(x),
-		);
-		const isbn13 = isbnList.find(
-			(x) => x.length === 13 && /^[0-9]{13}$/.test(x),
-		);
+		const isbn10 = isbnList.find(isRealIsbn10);
+		const isbn13 = isbnList.find(isRealIsbn13);
 		const publishYear = doc.first_publish_year
 			? String(doc.first_publish_year)
 			: doc.publish_date?.[0]?.slice(0, 4);
 		const language = doc.language?.[0]
-			? LANG_MAP[doc.language[0]] ?? doc.language[0]
+			? iso6392to6391(doc.language[0]) ?? doc.language[0]
 			: undefined;
 		return {
 			title: doc.title ?? '',
@@ -237,12 +186,4 @@ export class OpenLibraryProvider implements BookProvider {
 function clampLimit(n: number | undefined): number {
 	if (typeof n !== 'number' || !Number.isFinite(n)) return 10;
 	return Math.max(1, Math.min(100, Math.trunc(n)));
-}
-
-function to3LetterLang(twoLetter: string): string | undefined {
-	// Reverse lookup — first entry wins for languages with multiple 3-letter codes.
-	for (const [three, two] of Object.entries(LANG_MAP)) {
-		if (two === twoLetter) return three;
-	}
-	return undefined;
 }

@@ -1,6 +1,45 @@
-import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
+import {
+	App,
+	ExtraButtonComponent,
+	Notice,
+	PluginSettingTab,
+	Setting,
+	TextComponent,
+} from 'obsidian';
 
 import type BookMetasearchPlugin from '../main';
+
+/**
+ * Turn a text input into a password-masked field with a click-to-reveal
+ * toggle button. Values are still stored in plain text — this is UI
+ * shoulder-surfing prevention, not encryption.
+ */
+function maskAsSecret(text: TextComponent): void {
+	text.inputEl.type = 'password';
+	text.inputEl.autocomplete = 'off';
+	text.inputEl.spellcheck = false;
+}
+
+function attachRevealButton(
+	setting: Setting,
+	text: TextComponent,
+): ExtraButtonComponent {
+	let shown = false;
+	let button!: ExtraButtonComponent;
+	setting.addExtraButton((btn) => {
+		button = btn;
+		btn
+			.setIcon('eye')
+			.setTooltip('값 표시')
+			.onClick(() => {
+				shown = !shown;
+				text.inputEl.type = shown ? 'text' : 'password';
+				btn.setIcon(shown ? 'eye-off' : 'eye');
+				btn.setTooltip(shown ? '값 숨김' : '값 표시');
+			});
+	});
+	return button;
+}
 
 const TTB_ISSUE_URL = 'https://www.aladin.co.kr/ttb/wblog_manage.aspx';
 
@@ -69,7 +108,7 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl('h2', { text: 'Book Metasearch' });
+		;
 		containerEl.createEl('p', {
 			text:
 				'Metasearch across Aladin, Kakao, Google Books, and Open Library. ' +
@@ -78,21 +117,26 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 		});
 
 		// ── 1. Providers ─────────────────────────────
-		containerEl.createEl('h3', { text: 'Providers' });
+		new Setting(containerEl).setName("Providers").setHeading();
 
-		new Setting(containerEl)
-			.setName('Aladin TTB Key')
-			.setDesc('알라딘 오픈 API 키. 발급 페이지에서 무료로 받을 수 있습니다.')
-			.addText((text) =>
-				text
-					.setPlaceholder('ttbXXXXXXXXX')
-					.setValue(this.plugin.settings.aladinTtbKey)
-					.onChange(async (value) => {
-						this.plugin.settings.aladinTtbKey = value.trim();
-						await this.plugin.saveSettings();
-					}),
-			)
-			.addButton((btn) =>
+		{
+			let inputRef!: TextComponent;
+			const setting = new Setting(containerEl)
+				.setName('Aladin TTB Key')
+				.setDesc('알라딘 오픈 API 키. 발급 페이지에서 무료로 받을 수 있습니다.')
+				.addText((text) => {
+					inputRef = text;
+					maskAsSecret(text);
+					text
+						.setPlaceholder('ttbXXXXXXXXX')
+						.setValue(this.plugin.settings.aladinTtbKey)
+						.onChange(async (value) => {
+							this.plugin.settings.aladinTtbKey = value.trim();
+							await this.plugin.saveSettings();
+						});
+				});
+			attachRevealButton(setting, inputRef);
+			setting.addButton((btn) =>
 				btn
 					.setButtonText('발급 페이지 열기')
 					.setTooltip(TTB_ISSUE_URL)
@@ -100,6 +144,7 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 						window.open(TTB_ISSUE_URL);
 					}),
 			);
+		}
 
 		new Setting(containerEl)
 			.setName('Aladin 연결 테스트')
@@ -124,19 +169,24 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 				}),
 			);
 
-		new Setting(containerEl)
-			.setName('Kakao REST API Key')
-			.setDesc('Kakao Developers 애플리케이션의 REST API 키. 즉시 발급, 승인 대기 없음.')
-			.addText((text) =>
-				text
-					.setPlaceholder('a1b2c3d4...')
-					.setValue(this.plugin.settings.kakaoRestApiKey)
-					.onChange(async (value) => {
-						this.plugin.settings.kakaoRestApiKey = value.trim();
-						await this.plugin.saveSettings();
-					}),
-			)
-			.addButton((btn) =>
+		{
+			let inputRef!: TextComponent;
+			const setting = new Setting(containerEl)
+				.setName('Kakao REST API Key')
+				.setDesc('Kakao Developers 애플리케이션의 REST API 키. 즉시 발급, 승인 대기 없음.')
+				.addText((text) => {
+					inputRef = text;
+					maskAsSecret(text);
+					text
+						.setPlaceholder('a1b2c3d4...')
+						.setValue(this.plugin.settings.kakaoRestApiKey)
+						.onChange(async (value) => {
+							this.plugin.settings.kakaoRestApiKey = value.trim();
+							await this.plugin.saveSettings();
+						});
+				});
+			attachRevealButton(setting, inputRef);
+			setting.addButton((btn) =>
 				btn
 					.setButtonText('발급 페이지 열기')
 					.setTooltip('developers.kakao.com')
@@ -144,6 +194,7 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 						window.open('https://developers.kakao.com/');
 					}),
 			);
+		}
 
 		new Setting(containerEl)
 			.setName('Kakao 연결 테스트')
@@ -164,22 +215,27 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 				}),
 			);
 
-		new Setting(containerEl)
-			.setName('Google Books API Key')
-			.setDesc(
-				'선택 사항 — 없어도 검색은 되지만 rate limit이 낮습니다. ' +
-					'Google Cloud Console에서 Books API 활성화 후 발급받으면 1,000/day 무료.',
-			)
-			.addText((text) =>
-				text
-					.setPlaceholder('AIza...')
-					.setValue(this.plugin.settings.googleBooksApiKey)
-					.onChange(async (value) => {
-						this.plugin.settings.googleBooksApiKey = value.trim();
-						await this.plugin.saveSettings();
-					}),
-			)
-			.addButton((btn) =>
+		{
+			let inputRef!: TextComponent;
+			const setting = new Setting(containerEl)
+				.setName('Google Books API Key')
+				.setDesc(
+					'선택 사항 — 없어도 검색은 되지만 rate limit이 낮습니다. ' +
+						'Google Cloud Console에서 Books API 활성화 후 발급받으면 1,000/day 무료.',
+				)
+				.addText((text) => {
+					inputRef = text;
+					maskAsSecret(text);
+					text
+						.setPlaceholder('AIza...')
+						.setValue(this.plugin.settings.googleBooksApiKey)
+						.onChange(async (value) => {
+							this.plugin.settings.googleBooksApiKey = value.trim();
+							await this.plugin.saveSettings();
+						});
+				});
+			attachRevealButton(setting, inputRef);
+			setting.addButton((btn) =>
 				btn
 					.setButtonText('Console 열기')
 					.setTooltip('console.cloud.google.com')
@@ -189,6 +245,7 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 						);
 					}),
 			);
+		}
 
 		new Setting(containerEl)
 			.setName('Google Books 연결 테스트')
@@ -267,7 +324,7 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 			);
 
 		// ── 2. Notes ─────────────────────────────────
-		containerEl.createEl('h3', { text: 'Notes' });
+		new Setting(containerEl).setName("Notes").setHeading();
 
 		new Setting(containerEl)
 			.setName('노트 저장 폴더')
@@ -331,7 +388,7 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 			);
 
 		// ── 3. Frontmatter ───────────────────────────
-		containerEl.createEl('h3', { text: 'Frontmatter' });
+		new Setting(containerEl).setName("Frontmatter").setHeading();
 
 		new Setting(containerEl)
 			.setName('기본 프론트매터 사용')
@@ -386,7 +443,7 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 			});
 
 		// ── 4. Covers ────────────────────────────────
-		containerEl.createEl('h3', { text: 'Covers' });
+		new Setting(containerEl).setName("Covers").setHeading();
 
 		new Setting(containerEl)
 			.setName('커버 이미지 폴더')
@@ -427,7 +484,7 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 			);
 
 		// ── 5. Search UI ─────────────────────────────
-		containerEl.createEl('h3', { text: 'Search UI' });
+		new Setting(containerEl).setName("Search UI").setHeading();
 
 		new Setting(containerEl)
 			.setName('검색 결과에 커버 이미지 표시')
@@ -442,7 +499,7 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 			);
 
 		// ── 6. Locale ────────────────────────────────
-		containerEl.createEl('h3', { text: 'Locale' });
+		new Setting(containerEl).setName("Locale").setHeading();
 
 		new Setting(containerEl)
 			.setName('기본 검색 언어')
@@ -475,7 +532,7 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 			);
 
 		// ── 5. Attribution ───────────────────────────
-		containerEl.createEl('h3', { text: 'Attribution' });
+		new Setting(containerEl).setName("Attribution").setHeading();
 
 		new Setting(containerEl)
 			.setName('Aladin 크레딧 링크 삽입')
@@ -492,7 +549,7 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 			);
 
 		// ── 6. Tools ─────────────────────────────────
-		containerEl.createEl('h3', { text: 'Tools' });
+		new Setting(containerEl).setName("Tools").setHeading();
 
 		new Setting(containerEl)
 			.setName('Naver → Aladin 이전 도구')

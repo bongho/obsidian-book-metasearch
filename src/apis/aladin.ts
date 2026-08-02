@@ -9,6 +9,8 @@ import type {
 import { ProviderError } from './base';
 import { parseAladinAuthor } from '../util/aladin-author-parser';
 import { parseAladinCategory } from '../util/aladin-category-parser';
+import { stripHtml } from '../util/html';
+import { isRealIsbn10 } from '../util/isbn';
 
 /**
  * Aladin Open API (알라딘 오픈 API).
@@ -268,16 +270,3 @@ function mapTargetType(t: SearchOptions['targetType']): string {
 	}
 }
 
-function stripHtml(s: string): string {
-	return s.replace(/<[^>]+>/g, '').trim();
-}
-
-/**
- * ISBN10 shape: 9 digits + [0-9X]. Aladin sometimes returns internal K-codes
- * (e.g. "K792138300") in the `isbn` field for eBooks / partner-exclusive items.
- * We filter those out so downstream note-writers don't emit a bogus ISBN.
- */
-function isRealIsbn10(s: string | undefined): boolean {
-	if (!s) return false;
-	return /^[0-9]{9}[0-9X]$/i.test(s);
-}
