@@ -113,4 +113,27 @@ export class ProviderRegistry {
 		}
 		return [];
 	}
+
+	/**
+	 * ISBN lookup across providers — first match wins. Silent per-provider
+	 * failures move on to the next provider.
+	 */
+	async searchByISBN(
+		isbn: string,
+		order: string[],
+	): Promise<Book | null> {
+		const targets = this.resolveOrdered(order);
+		for (const p of targets) {
+			try {
+				const book = await p.searchByISBN(isbn);
+				if (book) return book;
+			} catch (e) {
+				console.warn(
+					`[book-metasearch] ${p.id} ISBN lookup failed, trying next`,
+					e,
+				);
+			}
+		}
+		return null;
+	}
 }

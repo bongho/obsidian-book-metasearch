@@ -125,10 +125,145 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName('Provider 우선순위')
-			.setDesc('현재 활성 provider (읽기 전용). S1은 Aladin만 등록됩니다.')
+			.setName('Kakao REST API Key')
+			.setDesc('Kakao Developers 애플리케이션의 REST API 키. 즉시 발급, 승인 대기 없음.')
 			.addText((text) =>
-				text.setValue(this.plugin.settings.priorityOrder.join(', ')).setDisabled(true),
+				text
+					.setPlaceholder('a1b2c3d4...')
+					.setValue(this.plugin.settings.kakaoRestApiKey)
+					.onChange(async (value) => {
+						this.plugin.settings.kakaoRestApiKey = value.trim();
+						await this.plugin.saveSettings();
+					}),
+			)
+			.addButton((btn) =>
+				btn
+					.setButtonText('발급 페이지 열기')
+					.setTooltip('developers.kakao.com')
+					.onClick(() => {
+						window.open('https://developers.kakao.com/');
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName('Kakao 연결 테스트')
+			.addButton((btn) =>
+				btn.setButtonText('Healthcheck 실행').onClick(async () => {
+					btn.setDisabled(true).setButtonText('확인 중…');
+					try {
+						const status = await this.plugin.kakao.healthcheck();
+						new Notice(
+							status.ok
+								? '✅ Kakao OK'
+								: `❌ Kakao [${status.code}]\n${status.message}`,
+							6000,
+						);
+					} finally {
+						btn.setDisabled(false).setButtonText('Healthcheck 실행');
+					}
+				}),
+			);
+
+		new Setting(containerEl)
+			.setName('Google Books API Key')
+			.setDesc(
+				'선택 사항 — 없어도 검색은 되지만 rate limit이 낮습니다. ' +
+					'Google Cloud Console에서 Books API 활성화 후 발급받으면 1,000/day 무료.',
+			)
+			.addText((text) =>
+				text
+					.setPlaceholder('AIza...')
+					.setValue(this.plugin.settings.googleBooksApiKey)
+					.onChange(async (value) => {
+						this.plugin.settings.googleBooksApiKey = value.trim();
+						await this.plugin.saveSettings();
+					}),
+			)
+			.addButton((btn) =>
+				btn
+					.setButtonText('Console 열기')
+					.setTooltip('console.cloud.google.com')
+					.onClick(() => {
+						window.open(
+							'https://console.cloud.google.com/apis/credentials',
+						);
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName('Google Books 연결 테스트')
+			.addButton((btn) =>
+				btn.setButtonText('Healthcheck 실행').onClick(async () => {
+					btn.setDisabled(true).setButtonText('확인 중…');
+					try {
+						const status = await this.plugin.google.healthcheck();
+						new Notice(
+							status.ok
+								? '✅ Google Books OK'
+								: `❌ Google Books [${status.code}]\n${status.message}`,
+							6000,
+						);
+					} finally {
+						btn.setDisabled(false).setButtonText('Healthcheck 실행');
+					}
+				}),
+			);
+
+		new Setting(containerEl)
+			.setName('Open Library 연결 테스트')
+			.setDesc('무인증 provider (CC0 오픈 데이터).')
+			.addButton((btn) =>
+				btn.setButtonText('Healthcheck 실행').onClick(async () => {
+					btn.setDisabled(true).setButtonText('확인 중…');
+					try {
+						const status = await this.plugin.openLibrary.healthcheck();
+						new Notice(
+							status.ok
+								? '✅ Open Library OK'
+								: `❌ Open Library [${status.code}]\n${status.message}`,
+							6000,
+						);
+					} finally {
+						btn.setDisabled(false).setButtonText('Healthcheck 실행');
+					}
+				}),
+			);
+
+		new Setting(containerEl)
+			.setName('검색 전략')
+			.setDesc(
+				'sequential: 우선순위대로 시도, 결과 있는 첫 provider에서 멈춤. ' +
+					'fanout: 모든 provider에 병렬 질의 후 ISBN13으로 중복 제거.',
+			)
+			.addDropdown((dd) =>
+				dd
+					.addOption('sequential', 'Sequential (fallback)')
+					.addOption('fanout', 'Fanout (parallel + dedupe)')
+					.setValue(this.plugin.settings.searchStrategy)
+					.onChange(async (value) => {
+						this.plugin.settings.searchStrategy =
+							value as typeof this.plugin.settings.searchStrategy;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName('Provider 우선순위')
+			.setDesc(
+				'쉼표로 구분된 provider ID 순서 (aladin, kakao, google, openlibrary). ' +
+					'sequential 모드에서 순차 시도, fanout 모드에서 중복 제거 우선순위.',
+			)
+			.addText((text) =>
+				text
+					.setPlaceholder('aladin, kakao, google, openlibrary')
+					.setValue(this.plugin.settings.priorityOrder.join(', '))
+					.onChange(async (value) => {
+						this.plugin.settings.priorityOrder = value
+							.split(',')
+							.map((s) => s.trim())
+							.filter(Boolean);
+						await this.plugin.saveSettings();
+					}),
 			);
 
 		// ── 2. Notes ─────────────────────────────────

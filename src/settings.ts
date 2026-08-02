@@ -13,11 +13,18 @@ export type FrontmatterKeyCase =
 	| 'kebab-case';
 
 export interface BookMetasearchSettings {
-	// ── Provider auth (S1: Aladin only; S2+: Kakao, Google Books) ──
+	// ── Provider auth ──
 	aladinTtbKey: string;
+	kakaoRestApiKey: string;
+	googleBooksApiKey: string; // optional — improves rate limit
 
 	// ── Provider priority for sequential fallback / fanout ordering ──
 	priorityOrder: string[];
+
+	// ── Fanout strategy ──
+	// 'sequential': try providers in priority order, return first non-empty
+	// 'fanout': query every provider in parallel, dedupe by ISBN13, merge results
+	searchStrategy: 'sequential' | 'fanout';
 
 	// ── Note & cover storage — bongho vault defaults ──
 	notesFolder: string;
@@ -68,7 +75,10 @@ export interface BookMetasearchSettings {
 
 export const DEFAULT_SETTINGS: BookMetasearchSettings = {
 	aladinTtbKey: '',
-	priorityOrder: ['aladin'],
+	kakaoRestApiKey: '',
+	googleBooksApiKey: '',
+	priorityOrder: ['aladin', 'kakao', 'google', 'openlibrary'],
+	searchStrategy: 'sequential',
 	notesFolder: '85. References (Book Search)',
 	coverFolder: '80. References/Assets/Images',
 	templateFile: '',

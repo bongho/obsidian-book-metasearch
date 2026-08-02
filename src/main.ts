@@ -1,6 +1,9 @@
 import { Notice, Plugin, TFile } from 'obsidian';
 
 import { AladinProvider } from './apis/aladin';
+import { GoogleBooksProvider } from './apis/google-books';
+import { KakaoProvider } from './apis/kakao';
+import { OpenLibraryProvider } from './apis/openlibrary';
 import { ProviderRegistry } from './apis/registry';
 import { detectAnpigon } from './migration/naver-detector';
 import { BookMetasearchSettings, DEFAULT_SETTINGS } from './settings';
@@ -22,6 +25,9 @@ export default class BookMetasearchPlugin extends Plugin {
 	settings!: BookMetasearchSettings;
 	registry!: ProviderRegistry;
 	aladin!: AladinProvider;
+	kakao!: KakaoProvider;
+	google!: GoogleBooksProvider;
+	openLibrary!: OpenLibraryProvider;
 	writer!: NoteWriter;
 
 	async onload(): Promise<void> {
@@ -30,7 +36,13 @@ export default class BookMetasearchPlugin extends Plugin {
 
 		this.registry = new ProviderRegistry();
 		this.aladin = new AladinProvider(() => this.settings.aladinTtbKey);
+		this.kakao = new KakaoProvider(() => this.settings.kakaoRestApiKey);
+		this.google = new GoogleBooksProvider(() => this.settings.googleBooksApiKey);
+		this.openLibrary = new OpenLibraryProvider();
 		this.registry.register(this.aladin);
+		this.registry.register(this.kakao);
+		this.registry.register(this.google);
+		this.registry.register(this.openLibrary);
 		this.writer = new NoteWriter(this.app, this.settings);
 
 		this.addSettingTab(new BookMetasearchSettingTab(this.app, this));
@@ -95,7 +107,7 @@ export default class BookMetasearchPlugin extends Plugin {
 		new BookSearchModal(
 			this.app,
 			this.registry,
-			this.settings.priorityOrder,
+			this.settings,
 			async (book) => {
 				const file = await this.writer.create(book);
 				if (this.settings.openNoteAfterCreate) {
@@ -110,7 +122,10 @@ export default class BookMetasearchPlugin extends Plugin {
 	openIsbnSearch(): void {
 		new IsbnInputModal(this.app, async (isbn) => {
 			try {
-				const book = await this.aladin.searchByISBN(isbn);
+				const book = await this.registry.searchByISBN(
+					isbn,
+					this.settings.priorityOrder,
+				);
 				if (!book) {
 					new Notice(`ISBN ${isbn} 결과 없음`);
 					return;
@@ -147,12 +162,20 @@ export default class BookMetasearchPlugin extends Plugin {
 
 			let book = null;
 			if (isbn && (isbn.length === 10 || isbn.length === 13)) {
-				book = await this.aladin.searchByISBN(isbn);
+				book = await this.registry.searchByISBN(
+					isbn,
+					this.settings.priorityOrder,
+				);
 			}
 			if (!book && title) {
-				const results = await this.aladin.searchByQuery(title, {
-					maxResults: 1,
-				});
+				const results = await this.registry.sequential(
+					title,
+					{
+						maxResults: 1,
+						locale: this.settings.localePreference,
+					},
+					this.settings.priorityOrder,
+				);
 				book = results[0] ?? null;
 			}
 			if (!book) {

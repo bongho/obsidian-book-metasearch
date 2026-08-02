@@ -1,8 +1,45 @@
-/*
+/* Book Metasearch — SuggestModal styling */
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+.bm-suggestion {
+	display: flex;
+	gap: 12px;
+	padding: 6px 4px;
+	align-items: flex-start;
+}
 
-If your plugin does not need CSS, delete this file.
+.bm-cover {
+	flex-shrink: 0;
+	width: 40px;
+	height: auto;
+	max-height: 60px;
+	object-fit: contain;
+	border-radius: 3px;
+	background: var(--background-secondary);
+}
 
-*/
+.bm-body {
+	flex: 1;
+	min-width: 0;
+}
+
+.bm-title {
+	font-weight: 500;
+}
+
+.bm-subtitle {
+	color: var(--text-muted);
+	font-weight: 400;
+}
+
+.bm-meta {
+	color: var(--text-muted);
+	font-size: 0.85em;
+	margin-top: 2px;
+}
+
+.bm-isbn {
+	color: var(--text-faint);
+	font-size: 0.75em;
+	font-family: var(--font-monospace);
+	margin-top: 2px;
+}
