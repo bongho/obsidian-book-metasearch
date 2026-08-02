@@ -138,6 +138,11 @@ export class NoteWriter {
 		lines.push('');
 		lines.push(`# 📚 Book Reference — ${book.title}`);
 		lines.push('');
+		lines.push('## Why to Read');
+		lines.push('- ');
+		lines.push('');
+		lines.push('## Abstract / Description');
+		lines.push('');
 		lines.push('<!-- BOOKSEARCH:AUTO-START -->');
 		lines.push('<!-- BOOKSEARCH:AUTO-END -->');
 
