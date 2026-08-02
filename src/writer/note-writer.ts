@@ -140,7 +140,8 @@ export class NoteWriter {
 		};
 
 		return template.replace(/\{\{(\w+)\}\}/g, (match, key: string) => {
-			if (key in vars) return vars[key];
+			const value = vars[key];
+			if (value !== undefined) return value;
 			return match; // Unknown placeholder → leave for Templater / manual fill
 		});
 	}
