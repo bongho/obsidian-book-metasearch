@@ -1,0 +1,177 @@
+import { App, normalizePath, TFile } from 'obsidian';
+
+import type { Book } from '../apis/base';
+import type { BookMetasearchSettings } from '../settings';
+import { sanitizeFilename } from '../util/sanitize';
+
+/**
+ * Turns a `Book` from the search modal into a note file in the vault, matching
+ * bongho's existing `85. References (Book Search)/` schema (measured from the
+ * live vault template + real notes).
+ *
+ * Frontmatter shape (S1, per PRD Aladin mapping):
+ *
+ *   type: reference
+ *   tags: [book]
+ *   created: 2026-08-02 21:15
+ *   status: inProgress
+ *   title, subtitle
+ *   author:   [원저자, ...]
+ *   authors:  [역자, ...]        (empty array if no translator)
+ *   category: [leaf]
+ *   categories: [국내도서, 인문학, ...]  (full path)
+ *   publisher, publish (연도), total (pages)
+ *   isbn: "isbn10 isbn13"  (space-joined per bongho vault convention)
+ *   cover: <url>
+ *   localCover: <coverFolder>/<filename>.jpg
+ *   provider: aladin
+ *   provider_url: <link>
+ *
+ * Body:
+ *   # 📚 Book Reference — <title>
+ *   ## Why to Read
+ *   ## Abstract / Description  (Aladin description, HTML-stripped)
+ *   <!-- BOOKSEARCH:AUTO-START --> ... <!-- BOOKSEARCH:AUTO-END -->
+ *   Credit link (Aladin ToS)
+ *
+ * S1 stores `cover: <url>` and `localCover: <derived path>`; actual binary
+ * download lands in S4.
+ */
+export class NoteWriter {
+	constructor(
+		private readonly app: App,
+		private readonly settings: BookMetasearchSettings,
+	) {}
+
+	async create(book: Book): Promise<TFile> {
+		const folder = normalizePath(this.settings.notesFolder);
+		const filename = this.buildFilename(book);
+		const path = normalizePath(`${folder}/${filename}.md`);
+
+		if (await this.app.vault.adapter.exists(path)) {
+			throw new Error(`이미 존재하는 노트: ${path}`);
+		}
+		if (!(await this.app.vault.adapter.exists(folder))) {
+			await this.app.vault.createFolder(folder);
+		}
+
+		const content = this.render(book, filename);
+		return this.app.vault.create(path, content);
+	}
+
+	private buildFilename(book: Book): string {
+		const author = book.authors[0] ?? '저자미상';
+		return sanitizeFilename(`${book.title} - ${author}`);
+	}
+
+	private render(book: Book, filenameStem: string): string {
+		const localCover =
+			book.coverUrl
+				? `${this.settings.coverFolder}/${filenameStem}.jpg`
+				: '';
+		const isbnCombined = [book.isbn10, book.isbn13]
+			.filter(Boolean)
+			.join(' ');
+		const created = formatCreated(new Date());
+
+		const lines: string[] = [];
+		lines.push('---');
+		lines.push('type: reference');
+		lines.push('tags:');
+		lines.push('  - book');
+		lines.push(`created: ${created}`);
+		lines.push('status: inProgress');
+		lines.push(`title: ${yamlQuote(book.title)}`);
+		if (book.subtitle) {
+			lines.push(`subtitle: ${yamlQuote(book.subtitle)}`);
+		}
+		lines.push(`author: ${yamlArray(book.authors)}`);
+		lines.push(`authors: ${yamlArray(book.translators ?? [])}`);
+		if (book.categoryLeaf) {
+			lines.push(`category: ${yamlArray([book.categoryLeaf])}`);
+		} else {
+			lines.push('category: []');
+		}
+		lines.push(`categories: ${yamlArray(book.categories ?? [])}`);
+		if (book.publisher) {
+			lines.push(`publisher: ${yamlScalar(book.publisher)}`);
+		}
+		if (book.publishYear) {
+			lines.push(`publish: ${book.publishYear}`);
+		}
+		if (typeof book.pageCount === 'number') {
+			lines.push(`total: ${book.pageCount}`);
+		}
+		if (isbnCombined) {
+			lines.push(`isbn: ${yamlQuote(isbnCombined)}`);
+		}
+		if (book.coverUrl) {
+			lines.push(`cover: ${book.coverUrl}`);
+		}
+		if (localCover) {
+			lines.push(`localCover: ${localCover}`);
+		}
+		lines.push(`provider: ${book.provider}`);
+		if (book.providerUrl) {
+			lines.push(`provider_url: ${book.providerUrl}`);
+		}
+		lines.push('---');
+		lines.push('');
+		lines.push(`# 📚 Book Reference — ${book.title}`);
+		lines.push('');
+		lines.push('## Why to Read');
+		lines.push('- ');
+		lines.push('');
+		lines.push('## Abstract / Description');
+		lines.push('');
+		if (book.description) {
+			lines.push(book.description);
+			lines.push('');
+		}
+		lines.push('<!-- BOOKSEARCH:AUTO-START -->');
+		lines.push('<!-- BOOKSEARCH:AUTO-END -->');
+
+		if (
+			this.settings.aladinCreditEnabled &&
+			book.provider === 'aladin' &&
+			book.providerUrl
+		) {
+			lines.push('');
+			lines.push('---');
+			lines.push('');
+			lines.push(`*Book DB by [Aladin](${book.providerUrl})*`);
+		}
+
+		return lines.join('\n') + '\n';
+	}
+}
+
+// ────────────────────────────────────────────────────────────
+// YAML helpers — simple string escaping, not a full YAML encoder.
+// We stay conservative and always quote user-supplied string values.
+
+function yamlQuote(s: string): string {
+	const escaped = s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+	return `"${escaped}"`;
+}
+
+function yamlScalar(s: string): string {
+	// Publisher etc. — quote only if the string contains YAML-special chars.
+	if (/[:#\-\[\]{}&*!|>'"%@`,\n]/.test(s) || s.trim() !== s) {
+		return yamlQuote(s);
+	}
+	return s;
+}
+
+function yamlArray(items: readonly string[]): string {
+	if (items.length === 0) return '[]';
+	return '[' + items.map((it) => yamlScalar(it)).join(', ') + ']';
+}
+
+function formatCreated(d: Date): string {
+	const pad = (n: number) => String(n).padStart(2, '0');
+	return (
+		`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
+		`${pad(d.getHours())}:${pad(d.getMinutes())}`
+	);
+}
