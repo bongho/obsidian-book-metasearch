@@ -4,6 +4,48 @@ import type BookMetasearchPlugin from '../main';
 
 const TTB_ISSUE_URL = 'https://www.aladin.co.kr/ttb/wblog_manage.aspx';
 
+// ISO 639-1 codes supported across Google Books langRestrict, Kakao Daum,
+// Open Library. Alphabetical, Korean first (bongho's primary).
+const LOCALES: readonly { code: string; label: string }[] = [
+	{ code: 'ko', label: '한국어 · Korean' },
+	{ code: 'en', label: 'English' },
+	{ code: 'ja', label: '日本語 · Japanese' },
+	{ code: 'zh', label: '中文 · Chinese' },
+	{ code: 'ar', label: 'العربية · Arabic' },
+	{ code: 'bg', label: 'Bulgarian' },
+	{ code: 'ca', label: 'Catalan' },
+	{ code: 'cs', label: 'Czech' },
+	{ code: 'da', label: 'Danish' },
+	{ code: 'de', label: 'Deutsch · German' },
+	{ code: 'el', label: 'Ελληνικά · Greek' },
+	{ code: 'es', label: 'Español · Spanish' },
+	{ code: 'et', label: 'Estonian' },
+	{ code: 'fi', label: 'Finnish' },
+	{ code: 'fr', label: 'Français · French' },
+	{ code: 'he', label: 'עברית · Hebrew' },
+	{ code: 'hi', label: 'हिन्दी · Hindi' },
+	{ code: 'hr', label: 'Croatian' },
+	{ code: 'hu', label: 'Hungarian' },
+	{ code: 'id', label: 'Bahasa Indonesia' },
+	{ code: 'it', label: 'Italiano · Italian' },
+	{ code: 'lt', label: 'Lithuanian' },
+	{ code: 'lv', label: 'Latvian' },
+	{ code: 'nl', label: 'Nederlands · Dutch' },
+	{ code: 'no', label: 'Norwegian' },
+	{ code: 'pl', label: 'Polski · Polish' },
+	{ code: 'pt', label: 'Português · Portuguese' },
+	{ code: 'ro', label: 'Romanian' },
+	{ code: 'ru', label: 'Русский · Russian' },
+	{ code: 'sk', label: 'Slovak' },
+	{ code: 'sl', label: 'Slovenian' },
+	{ code: 'sr', label: 'Српски · Serbian' },
+	{ code: 'sv', label: 'Svenska · Swedish' },
+	{ code: 'th', label: 'ไทย · Thai' },
+	{ code: 'tr', label: 'Türkçe · Turkish' },
+	{ code: 'uk', label: 'Українська · Ukrainian' },
+	{ code: 'vi', label: 'Tiếng Việt · Vietnamese' },
+];
+
 /**
  * Plugin settings tab shown in Obsidian's settings modal.
  *
@@ -269,18 +311,21 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('기본 검색 언어')
-			.setDesc('S1은 Aladin(ko)만 지원. S2에서 Kakao/Google Books/Open Library의 언어 옵션이 활성화됩니다.')
-			.addDropdown((dd) =>
-				dd
-					.addOption('ko', 'Korean (ko)')
-					.addOption('en', 'English (en)')
-					.addOption('ja', 'Japanese (ja)')
-					.setValue(this.plugin.settings.localePreference)
-					.onChange(async (value) => {
+			.setDesc(
+				'ISO 639-1 언어 코드. S1은 Aladin(ko)만 실사용. ' +
+					'S2 이후 Google Books langRestrict, Kakao target, Open Library language 필터에 반영됩니다.',
+			)
+			.addDropdown((dd) => {
+				for (const { code, label } of LOCALES) {
+					dd.addOption(code, `${label} (${code})`);
+				}
+				dd.setValue(this.plugin.settings.localePreference).onChange(
+					async (value) => {
 						this.plugin.settings.localePreference = value;
 						await this.plugin.saveSettings();
-					}),
-			);
+					},
+				);
+			});
 
 		new Setting(containerEl)
 			.setName('검색 시 언어 묻기')
