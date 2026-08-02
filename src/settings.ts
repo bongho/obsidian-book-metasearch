@@ -17,6 +17,13 @@ export interface BookMetasearchSettings {
 	notesFolder: string;
 	coverFolder: string;
 
+	// ── Template file (optional) ──
+	// Vault-relative path to a markdown template. When set, its contents are
+	// used as the note body; {{variables}} are substituted with book data.
+	// Templater `<% ... %>` blocks are preserved for the Templater plugin to
+	// execute post-creation. Leave empty to use the built-in minimal skeleton.
+	templateFile: string;
+
 	// ── Filename format ──
 	// Template variables: {{title}}, {{subtitle}}, {{author}}, {{publisher}},
 	// {{publishYear}}, {{isbn}} (isbn13 preferred, falls back to isbn10).
@@ -41,6 +48,7 @@ export const DEFAULT_SETTINGS: BookMetasearchSettings = {
 	priorityOrder: ['aladin'],
 	notesFolder: '85. References (Book Search)',
 	coverFolder: '80. References/Assets/Images',
+	templateFile: '',
 	fileNameFormat: '{{title}} - {{author}}',
 	openNoteAfterCreate: true,
 	enableCoverImageSave: false,

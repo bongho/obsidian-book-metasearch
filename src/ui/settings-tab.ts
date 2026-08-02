@@ -135,6 +135,24 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 					}),
 			);
 
+		new Setting(containerEl)
+			.setName('템플릿 파일')
+			.setDesc(
+				'노트 body의 base로 사용할 마크다운 템플릿 파일 경로 (볼트 상대 경로). ' +
+					'{{title}}, {{author}}, {{description}} 등 변수 치환 지원. ' +
+					'Templater `<% ... %>` 블록은 그대로 보존되어 Templater 플러그인이 후처리합니다. ' +
+					'비워두면 내장 기본 스켈레톤 사용.',
+			)
+			.addText((text) =>
+				text
+					.setPlaceholder('90. Settings/91. Templates/Template_Book Reference.md')
+					.setValue(this.plugin.settings.templateFile)
+					.onChange(async (value) => {
+						this.plugin.settings.templateFile = value.trim();
+						await this.plugin.saveSettings();
+					}),
+			);
+
 		// ── 3. Covers ────────────────────────────────
 		containerEl.createEl('h3', { text: 'Covers' });
 
