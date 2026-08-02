@@ -153,7 +153,62 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 					}),
 			);
 
-		// ── 3. Covers ────────────────────────────────
+		// ── 3. Frontmatter ───────────────────────────
+		containerEl.createEl('h3', { text: 'Frontmatter' });
+
+		new Setting(containerEl)
+			.setName('기본 프론트매터 사용')
+			.setDesc(
+				'끄면 type/title/author 등 기본 필드를 자동으로 넣지 않습니다. ' +
+					'"추가 프론트매터"와 "템플릿 파일"만으로 노트 스키마를 완전히 커스터마이징할 수 있습니다.',
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.useDefaultFrontmatter)
+					.onChange(async (value) => {
+						this.plugin.settings.useDefaultFrontmatter = value;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName('기본 프론트매터 필드명 형식')
+			.setDesc(
+				'as-is: 봉호 볼트와 100% 동일 (localCover + provider_url). ' +
+					'camelCase: anpigon 기본. snake_case/kebab-case: 통일된 스타일.',
+			)
+			.addDropdown((dd) =>
+				dd
+					.addOption('as-is', 'as-is (봉호 볼트 매칭)')
+					.addOption('camelCase', 'camelCase')
+					.addOption('snake_case', 'snake_case')
+					.addOption('kebab-case', 'kebab-case')
+					.setValue(this.plugin.settings.defaultFrontmatterKeyType)
+					.onChange(async (value) => {
+						this.plugin.settings.defaultFrontmatterKeyType =
+							value as typeof this.plugin.settings.defaultFrontmatterKeyType;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName('추가 프론트매터')
+			.setDesc(
+				'기본 프론트매터 다음에 붙는 YAML 조각. {{variables}} 치환 지원. 예: rating: 0',
+			)
+			.addTextArea((ta) => {
+				ta.setPlaceholder(
+					'rating: 0\nkorea_ebook: {{isbn13}}',
+				);
+				ta.setValue(this.plugin.settings.frontmatterAdditional);
+				ta.onChange(async (value) => {
+					this.plugin.settings.frontmatterAdditional = value;
+					await this.plugin.saveSettings();
+				});
+				ta.inputEl.rows = 4;
+			});
+
+		// ── 4. Covers ────────────────────────────────
 		containerEl.createEl('h3', { text: 'Covers' });
 
 		new Setting(containerEl)
@@ -172,10 +227,7 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('커버 이미지 로컬 저장')
-			.setDesc(
-				'노트 생성 시 커버 이미지를 볼트에 다운로드합니다. ' +
-					'⚠️ S1은 URL만 저장 — 실제 다운로드는 S4에서 활성화됩니다.',
-			)
+			.setDesc('노트 생성 시 커버 이미지를 볼트에 다운로드합니다.')
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.enableCoverImageSave)
@@ -185,7 +237,19 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 					}),
 			);
 
-		// ── 4. Search UI ─────────────────────────────
+		new Setting(containerEl)
+			.setName('커버 이미지 edge curl 효과')
+			.setDesc('저장된 커버 이미지에 종이접힘 효과를 추가. ⚠️ S4에서 활성화됩니다.')
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.enableCoverImageEdgeCurl)
+					.onChange(async (value) => {
+						this.plugin.settings.enableCoverImageEdgeCurl = value;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		// ── 5. Search UI ─────────────────────────────
 		containerEl.createEl('h3', { text: 'Search UI' });
 
 		new Setting(containerEl)
@@ -196,6 +260,36 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.showCoverInSearch)
 					.onChange(async (value) => {
 						this.plugin.settings.showCoverInSearch = value;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		// ── 6. Locale ────────────────────────────────
+		containerEl.createEl('h3', { text: 'Locale' });
+
+		new Setting(containerEl)
+			.setName('기본 검색 언어')
+			.setDesc('S1은 Aladin(ko)만 지원. S2에서 Kakao/Google Books/Open Library의 언어 옵션이 활성화됩니다.')
+			.addDropdown((dd) =>
+				dd
+					.addOption('ko', 'Korean (ko)')
+					.addOption('en', 'English (en)')
+					.addOption('ja', 'Japanese (ja)')
+					.setValue(this.plugin.settings.localePreference)
+					.onChange(async (value) => {
+						this.plugin.settings.localePreference = value;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName('검색 시 언어 묻기')
+			.setDesc('매 검색마다 언어를 선택하는 프롬프트를 띄웁니다. ⚠️ S2 multi-provider에서 활성화됩니다.')
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.askForLocale)
+					.onChange(async (value) => {
+						this.plugin.settings.askForLocale = value;
 						await this.plugin.saveSettings();
 					}),
 			);
