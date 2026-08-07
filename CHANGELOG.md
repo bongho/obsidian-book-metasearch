@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-08-07
+
+### Reverted
+
+- **Rolled back M5 (declarative settings API from v1.2.0).** In Obsidian 1.13+,
+  overriding `PluginSettingTab.getSettingDefinitions()` causes the framework
+  to render the declarative UI **in place of** our `display()` implementation,
+  not alongside it as we had assumed. That regressed several UX affordances:
+  API-key password masking (values shown as plaintext), the reveal toggle,
+  the per-provider **Healthcheck** buttons, the "Open migration helper" and
+  "발급 페이지 열기" action buttons — all vanished from the settings tab.
+  The current `SettingControl` union has no `secret`/`password` variant and
+  no idiomatic way to embed the healthcheck action affordances we rely on,
+  so a partial declarative footprint can't preserve the tab. The v1.0.1
+  community-plugin reviewer's warning about `getSettingDefinitions()` will
+  come back — accepting that in exchange for correct UX and no plaintext
+  key exposure. Deleted `src/ui/settings-definitions.ts`.
+
 ## [1.2.1] - 2026-08-07
 
 ### Changed
@@ -162,7 +180,8 @@ dedupe + Reading Log), M2 (citation insert), M3 (Aladin used-price), and M4
   `obsidian-book-search-plugin` config and guides users through Aladin
   setup.
 
-[Unreleased]: https://github.com/bongho/obsidian-book-metasearch/compare/1.2.1...HEAD
+[Unreleased]: https://github.com/bongho/obsidian-book-metasearch/compare/1.2.2...HEAD
+[1.2.2]: https://github.com/bongho/obsidian-book-metasearch/compare/1.2.1...1.2.2
 [1.2.1]: https://github.com/bongho/obsidian-book-metasearch/compare/1.2.0...1.2.1
 [1.2.0]: https://github.com/bongho/obsidian-book-metasearch/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/bongho/obsidian-book-metasearch/compare/1.0.1...1.1.0

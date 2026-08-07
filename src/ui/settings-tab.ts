@@ -4,14 +4,12 @@ import {
 	Notice,
 	PluginSettingTab,
 	Setting,
-	type SettingDefinitionItem,
 	TextComponent,
 } from 'obsidian';
 
 import type BookMetasearchPlugin from '../main';
 import { dumpErrorNote } from '../util/error-dump';
 import type { HealthStatus } from '../apis/base';
-import { buildSettingDefinitions } from './settings-definitions';
 
 /**
  * Called by every healthcheck button when the probe fails. Writes a redacted
@@ -73,7 +71,7 @@ const TTB_ISSUE_URL = 'https://www.aladin.co.kr/ttb/wblog_manage.aspx';
 
 // ISO 639-1 codes supported across Google Books langRestrict, Kakao Daum,
 // Open Library. Alphabetical, Korean first (bongho's primary).
-export const LOCALES: readonly { code: string; label: string }[] = [
+const LOCALES: readonly { code: string; label: string }[] = [
 	{ code: 'ko', label: '한국어 · Korean' },
 	{ code: 'en', label: 'English' },
 	{ code: 'ja', label: '日本語 · Japanese' },
@@ -130,17 +128,6 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 		private readonly plugin: BookMetasearchPlugin,
 	) {
 		super(app, plugin);
-	}
-
-	/**
-	 * Obsidian 1.13+ declarative settings API (M5). Runs in parallel with
-	 * `display()` — Obsidian uses this array to index our settings for its
-	 * Settings search bar, while `display()` still owns the actual rendering
-	 * (including action-only rows like healthcheck buttons that don't map to
-	 * declarative controls). See `settings-definitions.ts` for the definitions.
-	 */
-	getSettingDefinitions(): SettingDefinitionItem[] {
-		return buildSettingDefinitions();
 	}
 
 	display(): void {
