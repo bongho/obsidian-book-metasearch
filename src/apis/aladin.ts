@@ -4,6 +4,7 @@ import type {
 	Book,
 	BookProvider,
 	HealthStatus,
+	PriceQuote,
 	SearchOptions,
 } from './base';
 import { ProviderError } from './base';
@@ -49,6 +50,23 @@ interface AladinItem {
 		subTitle?: string;
 		originalTitle?: string;
 		itemPage?: number;
+		usedList?: {
+			aladinUsed?: {
+				itemCount?: number;
+				minPrice?: number;
+				link?: string;
+			};
+			userUsed?: {
+				itemCount?: number;
+				minPrice?: number;
+				link?: string;
+			};
+			spaceUsed?: {
+				itemCount?: number;
+				minPrice?: number;
+				link?: string;
+			};
+		};
 	};
 	// Explicitly ignored (S1 decision):
 	// priceSales, priceStandard, salesPoint, customerReviewRank, mallType, adult
@@ -152,6 +170,35 @@ export class AladinProvider implements BookProvider {
 		}
 		const item = data.item?.[0];
 		return item ? this.normalize(item) : null;
+	}
+
+	/**
+	 * Fetch the used-book price snapshot for an ISBN. Deliberately separate
+	 * from `searchByISBN` so callers opt in explicitly — used prices are
+	 * commercial info that shouldn't touch the `Book` note frontmatter (see
+	 * `PriceQuote` doc). Returns an empty array on "no used listings".
+	 */
+	async searchUsedPrices(isbn: string): Promise<PriceQuote[]> {
+		const key = this.ttbKey();
+		if (!key) {
+			throw new ProviderError(
+				this.id,
+				'AUTH_MISSING',
+				'TTB Key not configured',
+			);
+		}
+		const cleaned = isbn.replace(/[^0-9Xx]/g, '');
+		const data = await this.call('ItemLookUp.aspx', {
+			ItemId: cleaned,
+			ItemIdType: cleaned.length === 13 ? 'ISBN13' : 'ISBN',
+			OptResult: 'subInfo,usedList',
+		});
+		if (typeof data.errorCode === 'number') {
+			throw this.errorFromCode(data.errorCode, data.errorMessage);
+		}
+		const item = data.item?.[0];
+		if (!item) return [];
+		return parseUsedList(item.subInfo?.usedList, this.id, new Date());
 	}
 
 	/**
@@ -268,5 +315,60 @@ function mapTargetType(t: SearchOptions['targetType']): string {
 		default:
 			return 'Book';
 	}
+}
+
+interface UsedListBucket {
+	itemCount?: number;
+	minPrice?: number;
+	link?: string;
+}
+interface UsedListShape {
+	aladinUsed?: UsedListBucket;
+	userUsed?: UsedListBucket;
+	spaceUsed?: UsedListBucket;
+}
+
+/**
+ * Convert Aladin's `usedList` payload into the plugin-neutral `PriceQuote[]`.
+ * Exported for direct unit testing with fixture payloads — the API call
+ * itself is untestable without a real TTB Key.
+ *
+ * Aladin exposes three used channels:
+ *   - `aladinUsed` — Aladin-fulfilled used stock (highest trust)
+ *   - `userUsed`   — P2P marketplace
+ *   - `spaceUsed`  — physical store inventory
+ *
+ * Empty buckets and buckets without a positive minPrice are dropped so the
+ * caller can treat a non-empty result as "have at least one purchasable
+ * copy."
+ */
+export function parseUsedList(
+	usedList: UsedListShape | undefined,
+	providerId: string,
+	now: Date,
+): PriceQuote[] {
+	if (!usedList) return [];
+	const fetchedAt = now.toISOString();
+	const rows: { bucket?: UsedListBucket; condition: PriceQuote['condition'] }[] = [
+		{ bucket: usedList.aladinUsed, condition: 'used-good' },
+		{ bucket: usedList.spaceUsed, condition: 'used-good' },
+		{ bucket: usedList.userUsed, condition: 'used-fair' },
+	];
+	const out: PriceQuote[] = [];
+	for (const { bucket, condition } of rows) {
+		if (!bucket) continue;
+		const count = typeof bucket.itemCount === 'number' ? bucket.itemCount : 0;
+		const price = typeof bucket.minPrice === 'number' ? bucket.minPrice : 0;
+		if (count <= 0 || price <= 0) continue;
+		out.push({
+			provider: providerId,
+			condition,
+			priceKrw: price,
+			availability: 'in-stock',
+			link: bucket.link,
+			fetchedAt,
+		});
+	}
+	return out;
 }
 

@@ -5,7 +5,75 @@ import type {
 	BookMetasearchSettings,
 	FrontmatterKeyCase,
 } from '../settings';
+import { stripHtml } from '../util/html';
 import { sanitizeFilename } from '../util/sanitize';
+import { DuplicateBookError, VaultBookIndex } from './vault-index';
+
+const AUTO_START = '<!-- BOOKSEARCH:AUTO-START -->';
+const AUTO_END = '<!-- BOOKSEARCH:AUTO-END -->';
+
+/**
+ * Replace whatever sits between the first `AUTO-START` / `AUTO-END` marker
+ * pair with `newContent`, preserving everything else (user edits to `## Why
+ * to Read`, credit links, etc.). Only the first pair is touched so nested
+ * markers stay intact.
+ *
+ * `found: false` when either marker is missing — callers should skip the
+ * modify call in that case rather than injecting new markers (that would
+ * violate the "never touch user body" rule when the user has deleted the
+ * auto-block on purpose).
+ */
+export type ReadingStatus = 'wishlist' | 'reading' | 'read';
+
+/**
+ * Pure helper for M1-B "Mark as ..." commands. Given the current frontmatter,
+ * a target reading status, today's date, and the current key-case renaming
+ * fn, return the set of frontmatter keys to overwrite via `processFrontMatter`.
+ *
+ * Idempotency: `startedAt` / `finishedAt` stamps are added only when missing —
+ * transitioning `reading → wishlist → reading` never overwrites the original
+ * start date.
+ *
+ * `today` is injected so tests don't need to stub Date.now().
+ */
+export function deriveStatusUpdates(
+	current: Record<string, unknown>,
+	target: ReadingStatus,
+	today: string,
+	keyOfFn: (canonical: string) => string,
+): Record<string, unknown> {
+	const statusKey = keyOfFn('status');
+	const startedKey = keyOfFn('startedAt');
+	const finishedKey = keyOfFn('finishedAt');
+	const updates: Record<string, unknown> = { [statusKey]: target };
+
+	const hasStarted = typeof current[startedKey] === 'string' && current[startedKey] !== '';
+	const hasFinished = typeof current[finishedKey] === 'string' && current[finishedKey] !== '';
+
+	if (target === 'reading' && !hasStarted) {
+		updates[startedKey] = today;
+	}
+	if (target === 'read') {
+		if (!hasFinished) updates[finishedKey] = today;
+		if (!hasStarted) updates[startedKey] = today;
+	}
+	return updates;
+}
+
+export function replaceAutoBlock(
+	body: string,
+	newContent: string,
+): { updated: string; found: boolean } {
+	const startIdx = body.indexOf(AUTO_START);
+	if (startIdx < 0) return { updated: body, found: false };
+	const endIdx = body.indexOf(AUTO_END, startIdx + AUTO_START.length);
+	if (endIdx < 0) return { updated: body, found: false };
+	const before = body.slice(0, startIdx + AUTO_START.length);
+	const after = body.slice(endIdx);
+	const trimmed = newContent.trim();
+	const middle = trimmed ? `\n${trimmed}\n` : '\n';
+	return { updated: before + middle + after, found: true };
+}
 
 /**
  * Turns a `Book` from the search modal into a note file in the vault, matching
@@ -23,9 +91,22 @@ export class NoteWriter {
 	constructor(
 		private readonly app: App,
 		private readonly settings: BookMetasearchSettings,
+		private readonly vaultIndex?: VaultBookIndex,
 	) {}
 
 	async create(book: Book): Promise<TFile> {
+		// M1-A: ISBN dedupe runs *before* the path-existence check so that a
+		// second edition (different filename, same ISBN13) is caught. Callers
+		// decide how to react to DuplicateBookError based on
+		// `settings.duplicateAction`.
+		if (this.vaultIndex) {
+			const isbnKey = book.isbn13 || book.isbn10;
+			if (isbnKey) {
+				const existing = this.vaultIndex.findByIsbn(isbnKey);
+				if (existing) throw new DuplicateBookError(existing, isbnKey);
+			}
+		}
+
 		const folder = normalizePath(this.settings.notesFolder);
 		const filename = this.buildFilename(book);
 		const path = normalizePath(`${folder}/${filename}.md`);
@@ -44,6 +125,25 @@ export class NoteWriter {
 			void this.downloadCover(book.coverUrl, filename);
 		}
 		return file;
+	}
+
+	/**
+	 * Set the reading status on an existing book note, stamping `startedAt` /
+	 * `finishedAt` on first transition (idempotent). No-op when the plugin's
+	 * Reading Log is turned off.
+	 */
+	async setStatus(file: TFile, status: ReadingStatus): Promise<void> {
+		if (!this.settings.readingStatusEnabled) return;
+		const kind = this.settings.defaultFrontmatterKeyType;
+		const keyFn = (k: string) => keyOf(k, kind);
+		const today = formatDate(new Date());
+		await this.app.fileManager.processFrontMatter(
+			file,
+			(fm: Record<string, unknown>) => {
+				const updates = deriveStatusUpdates(fm, status, today, keyFn);
+				Object.assign(fm, updates);
+			},
+		);
 	}
 
 	/**
@@ -85,6 +185,19 @@ export class NoteWriter {
 				Object.assign(fm, updates);
 			},
 		);
+
+		if (this.settings.autoFillDescription) {
+			const body = await this.app.vault.read(file);
+			const cleaned = stripHtml(book.description ?? '');
+			const { updated, found } = replaceAutoBlock(body, cleaned);
+			if (found && updated !== body) {
+				await this.app.vault.modify(file, updated);
+			} else if (!found) {
+				console.warn(
+					`[book-metasearch] auto-block markers missing in ${file.path}; description not refreshed`,
+				);
+			}
+		}
 
 		if (this.settings.enableCoverImageSave && book.coverUrl) {
 			void this.downloadCover(book.coverUrl, filename);
@@ -173,8 +286,11 @@ export class NoteWriter {
 		lines.push('');
 		lines.push('## Abstract / Description');
 		lines.push('');
-		lines.push('<!-- BOOKSEARCH:AUTO-START -->');
-		lines.push('<!-- BOOKSEARCH:AUTO-END -->');
+		lines.push(AUTO_START);
+		if (this.settings.autoFillDescription && book.description) {
+			lines.push(stripHtml(book.description));
+		}
+		lines.push(AUTO_END);
 
 		if (
 			this.settings.aladinCreditEnabled &&
@@ -209,7 +325,9 @@ export class NoteWriter {
 		lines.push(`${k('tags')}:`);
 		lines.push('  - book');
 		lines.push(`${k('created')}: ${created}`);
-		lines.push(`${k('status')}: inProgress`);
+		if (this.settings.readingStatusEnabled) {
+			lines.push(`${k('status')}: ${this.settings.initialStatus}`);
+		}
 		lines.push(`${k('title')}: ${yamlQuote(book.title)}`);
 		lines.push(`${k('subtitle')}: ${yamlQuote(book.subtitle ?? '')}`);
 		lines.push(`${k('author')}: ${yamlArray(book.authors)}`);
@@ -375,4 +493,10 @@ function formatCreated(d: Date): string {
 		`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
 		`${pad(d.getHours())}:${pad(d.getMinutes())}`
 	);
+}
+
+/** YYYY-MM-DD only, for `startedAt` / `finishedAt` reading-log stamps. */
+function formatDate(d: Date): string {
+	const pad = (n: number) => String(n).padStart(2, '0');
+	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }

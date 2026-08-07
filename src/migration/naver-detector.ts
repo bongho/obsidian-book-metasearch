@@ -57,6 +57,28 @@ export function hasNaverCredentials(s: AnpigonSettings | null): boolean {
 }
 
 /**
+ * Pure helper for the migration-banner decision. Kept out of `main.ts` so it
+ * can be unit-tested without stubbing the plugin lifecycle.
+ *
+ * Show the banner when all of:
+ *   - anpigon config exists AND is stuck on Naver (post-EOL)
+ *   - the user hasn't completed the migration flow yet
+ *   - the user hasn't explicitly dismissed the banner ("나중에")
+ */
+export function shouldShowMigrationBanner(
+	anpigon: AnpigonSettings | null,
+	settings: {
+		migrationCompletedAt: string;
+		migrationBannerDismissedAt: string;
+	},
+): boolean {
+	if (!isNaverStuck(anpigon)) return false;
+	if (settings.migrationCompletedAt) return false;
+	if (settings.migrationBannerDismissedAt) return false;
+	return true;
+}
+
+/**
  * Fields we can safely propose to reuse in the new plugin's settings without
  * the user re-typing them.
  */

@@ -7,6 +7,7 @@ import {
 	hasNaverCredentials,
 } from '../migration/naver-detector';
 import type { BookMetasearchSettings } from '../settings';
+import { dumpErrorNote } from '../util/error-dump';
 
 /**
  * Guides existing anpigon/obsidian-book-search-plugin users through the Naver
@@ -111,8 +112,21 @@ export class MigrationModal extends Modal {
 							if (status.ok) {
 								new Notice('✅ Aladin 연결 정상');
 							} else {
+								let dumpLine = '';
+								if (this.deps.settings.errorDumpEnabled) {
+									const file = await dumpErrorNote(
+										this.app,
+										this.deps.settings,
+										{
+											kind: 'migration',
+											provider: 'aladin',
+											error: status,
+										},
+									);
+									if (file) dumpLine = `\n📝 ${file.path}`;
+								}
 								new Notice(
-									`❌ Aladin [${status.code}] ${status.message}`,
+									`❌ Aladin [${status.code}] ${status.message}${dumpLine}`,
 									8000,
 								);
 							}
@@ -167,7 +181,10 @@ export class MigrationModal extends Modal {
 		// ── 완료 버튼 ─────────────────────────────────────
 		new Setting(contentEl)
 			.addButton((btn) =>
-				btn.setButtonText('나중에').onClick(() => {
+				btn.setButtonText('나중에').onClick(async () => {
+					this.deps.settings.migrationBannerDismissedAt =
+						new Date().toISOString();
+					await this.deps.saveSettings();
 					this.close();
 				}),
 			)
@@ -177,6 +194,8 @@ export class MigrationModal extends Modal {
 					.setCta()
 					.onClick(async () => {
 						this.deps.settings.aladinTtbKey = this.ttbKeyInput;
+						this.deps.settings.migrationCompletedAt =
+							new Date().toISOString();
 						await this.deps.saveSettings();
 						new Notice('설정 저장 완료 — 이제 검색을 사용하실 수 있습니다.');
 						this.close();

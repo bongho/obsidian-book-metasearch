@@ -50,6 +50,26 @@ export interface Book {
 }
 
 /**
+ * Commercial pricing snapshot for a specific edition + condition.
+ *
+ * NOTE: Deliberately kept OUT of the `Book` interface — `Book` describes the
+ * work (title, authors, ISBN, description), while prices are commercial
+ * signals that fluctuate. Storing them on `Book` would mean every re-search
+ * shows a diff on numeric fields; keeping them as a separate `PriceQuote[]`
+ * lets the note writer emit them into an append-only `## Price Watch`
+ * section (or a one-shot Notice) without touching frontmatter.
+ */
+export interface PriceQuote {
+	provider: string;
+	condition: 'new' | 'used-good' | 'used-fair' | 'ebook';
+	priceKrw?: number;
+	availability?: 'in-stock' | 'out-of-stock';
+	link?: string;
+	/** ISO timestamp when the quote was fetched. */
+	fetchedAt: string;
+}
+
+/**
  * Search options passed to `BookProvider.searchByQuery`.
  */
 export interface SearchOptions {

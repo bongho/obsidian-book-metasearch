@@ -8,6 +8,32 @@ import {
 } from 'obsidian';
 
 import type BookMetasearchPlugin from '../main';
+import { dumpErrorNote } from '../util/error-dump';
+import type { HealthStatus } from '../apis/base';
+
+/**
+ * Called by every healthcheck button when the probe fails. Writes a redacted
+ * diagnostics note to the vault if `errorDumpEnabled` is on, and augments the
+ * user-facing Notice with the resulting file path so the user knows where to
+ * find it.
+ */
+async function reportHealthFailure(
+	plugin: BookMetasearchPlugin,
+	provider: string,
+	status: Extract<HealthStatus, { ok: false }>,
+): Promise<string> {
+	const docs = status.docsUrl ? `\n${status.docsUrl}` : '';
+	if (!plugin.settings.errorDumpEnabled) {
+		return `❌ ${provider} [${status.code}]\n${status.message}${docs}`;
+	}
+	const file = await dumpErrorNote(plugin.app, plugin.settings, {
+		kind: 'healthcheck',
+		provider,
+		error: status,
+	});
+	const dumpLine = file ? `\n📝 ${file.path}` : '';
+	return `❌ ${provider} [${status.code}]\n${status.message}${docs}${dumpLine}`;
+}
 
 /**
  * Turn a text input into a password-masked field with a click-to-reveal
@@ -157,11 +183,12 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 						if (status.ok) {
 							new Notice('✅ Aladin OK');
 						} else {
-							const docs = status.docsUrl ? `\n${status.docsUrl}` : '';
-							new Notice(
-								`❌ Aladin [${status.code}]\n${status.message}${docs}`,
-								8000,
+							const msg = await reportHealthFailure(
+								this.plugin,
+								'Aladin',
+								status,
 							);
+							new Notice(msg, 8000);
 						}
 					} finally {
 						btn.setDisabled(false).setButtonText('Healthcheck 실행');
@@ -203,12 +230,16 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 					btn.setDisabled(true).setButtonText('확인 중…');
 					try {
 						const status = await this.plugin.kakao.healthcheck();
-						new Notice(
-							status.ok
-								? '✅ Kakao OK'
-								: `❌ Kakao [${status.code}]\n${status.message}`,
-							6000,
-						);
+						if (status.ok) {
+							new Notice('✅ Kakao OK', 6000);
+						} else {
+							const msg = await reportHealthFailure(
+								this.plugin,
+								'Kakao',
+								status,
+							);
+							new Notice(msg, 8000);
+						}
 					} finally {
 						btn.setDisabled(false).setButtonText('Healthcheck 실행');
 					}
@@ -254,12 +285,16 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 					btn.setDisabled(true).setButtonText('확인 중…');
 					try {
 						const status = await this.plugin.google.healthcheck();
-						new Notice(
-							status.ok
-								? '✅ Google Books OK'
-								: `❌ Google Books [${status.code}]\n${status.message}`,
-							6000,
-						);
+						if (status.ok) {
+							new Notice('✅ Google Books OK', 6000);
+						} else {
+							const msg = await reportHealthFailure(
+								this.plugin,
+								'Google Books',
+								status,
+							);
+							new Notice(msg, 8000);
+						}
 					} finally {
 						btn.setDisabled(false).setButtonText('Healthcheck 실행');
 					}
@@ -274,12 +309,16 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 					btn.setDisabled(true).setButtonText('확인 중…');
 					try {
 						const status = await this.plugin.openLibrary.healthcheck();
-						new Notice(
-							status.ok
-								? '✅ Open Library OK'
-								: `❌ Open Library [${status.code}]\n${status.message}`,
-							6000,
-						);
+						if (status.ok) {
+							new Notice('✅ Open Library OK', 6000);
+						} else {
+							const msg = await reportHealthFailure(
+								this.plugin,
+								'Open Library',
+								status,
+							);
+							new Notice(msg, 8000);
+						}
 					} finally {
 						btn.setDisabled(false).setButtonText('Healthcheck 실행');
 					}
@@ -561,6 +600,169 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 				btn.setButtonText('이전 도구 열기').onClick(() => {
 					void this.plugin.openMigrationHelper();
 				}),
+			);
+
+		// ── 7. Reading Log ───────────────────────────
+		new Setting(containerEl).setName('Reading Log').setHeading();
+
+		new Setting(containerEl)
+			.setName('독서 상태 필드 활성화')
+			.setDesc(
+				'신규 노트에 status 필드를 넣고 "Mark as wishlist/reading/read" 명령어를 활성화. ' +
+					'reading/read 전환 시 startedAt/finishedAt 날짜가 자동 기록됩니다.',
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.readingStatusEnabled)
+					.onChange(async (value) => {
+						this.plugin.settings.readingStatusEnabled = value;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName('신규 노트 초기 상태')
+			.setDesc('Search books로 만든 새 노트의 기본 status 값.')
+			.addDropdown((dd) =>
+				dd
+					.addOption('wishlist', 'Wishlist (아직 안 삼)')
+					.addOption('reading', 'Reading (읽는 중)')
+					.addOption('read', 'Read (완독)')
+					.setValue(this.plugin.settings.initialStatus)
+					.onChange(async (value) => {
+						this.plugin.settings.initialStatus =
+							value as typeof this.plugin.settings.initialStatus;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		// ── 8. Citation ──────────────────────────────
+		new Setting(containerEl).setName('Citation').setHeading();
+
+		new Setting(containerEl)
+			.setName('인용 형식')
+			.setDesc(
+				'"Insert book citation at cursor" 명령어가 커서에 삽입할 wikilink 형식.',
+			)
+			.addDropdown((dd) =>
+				dd
+					.addOption('wikilink', '[[제목]] (저자, 연도)')
+					.addOption(
+						'wikilink-alias',
+						'[[대상|저자, 연도 — 제목]] (alias 형식)',
+					)
+					.setValue(this.plugin.settings.citationStyle)
+					.onChange(async (value) => {
+						this.plugin.settings.citationStyle =
+							value as typeof this.plugin.settings.citationStyle;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName('노트 부재 시 동작')
+			.setDesc(
+				'인용 대상 책 노트가 볼트에 없을 때. insert-only는 미해결 링크를 그냥 삽입.',
+			)
+			.addDropdown((dd) =>
+				dd
+					.addOption('insert-only', 'Insert only (링크만 삽입, 기본)')
+					.addOption('create-note', 'Create note (자동 생성 후 링크)')
+					.addOption('prompt', 'Prompt (매번 확인 — 향후 구현)')
+					.setValue(this.plugin.settings.citationOnMissing)
+					.onChange(async (value) => {
+						this.plugin.settings.citationOnMissing =
+							value as typeof this.plugin.settings.citationOnMissing;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		// ── 9. Price Check ──────────────────────────
+		new Setting(containerEl).setName('Price Check').setHeading();
+
+		new Setting(containerEl)
+			.setName('Aladin 중고가 조회 활성화')
+			.setDesc(
+				'"Check used-book price (Aladin)" 명령어를 켭니다. TTB Key 필요, 하루 5,000회 quota 공유.',
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.priceCheckEnabled)
+					.onChange(async (value) => {
+						this.plugin.settings.priceCheckEnabled = value;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName('중고가 결과 노출')
+			.setDesc(
+				'notice-only: Obsidian Notice로만 표시(볼트 무수정). ' +
+					'section: 노트 하단 `## Price Watch`에 timestamped row 누적.',
+			)
+			.addDropdown((dd) =>
+				dd
+					.addOption('notice-only', 'Notice만 (기본)')
+					.addOption('section', 'Price Watch 섹션에 append')
+					.setValue(this.plugin.settings.priceOutputMode)
+					.onChange(async (value) => {
+						this.plugin.settings.priceOutputMode =
+							value as typeof this.plugin.settings.priceOutputMode;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		// ── 10. Duplicates ───────────────────────────
+		new Setting(containerEl).setName('Duplicates').setHeading();
+
+		new Setting(containerEl)
+			.setName('중복 노트 처리')
+			.setDesc(
+				'검색 결과가 볼트에 이미 있는 책(ISBN 일치)일 때의 기본 동작.',
+			)
+			.addDropdown((dd) =>
+				dd
+					.addOption('ask', '물어보기 (기본)')
+					.addOption('open', '기존 노트 열기')
+					.addOption('update', '기존 노트 업데이트')
+					.addOption('error', '알림 표시 후 취소')
+					.setValue(this.plugin.settings.duplicateAction)
+					.onChange(async (value) => {
+						this.plugin.settings.duplicateAction =
+							value as typeof this.plugin.settings.duplicateAction;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		// ── 11. Diagnostics ──────────────────────────
+		new Setting(containerEl).setName('Diagnostics').setHeading();
+
+		new Setting(containerEl)
+			.setName('실패 시 진단 노트 자동 저장')
+			.setDesc(
+				'Healthcheck·마이그레이션 실패 시 오류 내용을 볼트의 진단 폴더에 저장. ' +
+					'API 키 등 secret은 자동 마스킹됩니다.',
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.errorDumpEnabled)
+					.onChange(async (value) => {
+						this.plugin.settings.errorDumpEnabled = value;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName('진단 노트 폴더')
+			.setDesc('오류 dump 노트가 저장될 볼트 상대 경로.')
+			.addText((text) =>
+				text
+					.setPlaceholder('85. References (Book Search)/_errors')
+					.setValue(this.plugin.settings.errorDumpFolder)
+					.onChange(async (value) => {
+						this.plugin.settings.errorDumpFolder = value.trim();
+						await this.plugin.saveSettings();
+					}),
 			);
 	}
 }

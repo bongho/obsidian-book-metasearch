@@ -43,3 +43,14 @@
 	font-family: var(--font-monospace);
 	margin-top: 2px;
 }
+
+/* DuplicateModal (M1-A) */
+.book-metasearch-duplicate-label {
+	font-weight: bold;
+	margin-top: 0.5em;
+}
+
+.book-metasearch-duplicate-list dd {
+	margin-left: 1em;
+	color: var(--text-muted);
+}

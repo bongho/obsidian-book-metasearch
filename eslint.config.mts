@@ -6,7 +6,9 @@ export default defineConfig(
 	globalIgnores([
 		'node_modules',
 		'dist',
+		'coverage',
 		'esbuild.config.mjs',
+		'vitest.config.ts',
 		'version-bump.mjs',
 		'versions.json',
 		'main.js',
@@ -29,4 +31,12 @@ export default defineConfig(
 		},
 	},
 	...obsidianmd.configs.recommended,
+	{
+		files: ['src/**/*.test.ts', 'src/__mocks__/**/*.ts'],
+		rules: {
+			'@typescript-eslint/no-explicit-any': 'off',
+			'@typescript-eslint/no-unused-vars': 'off',
+			'no-console': 'off',
+		},
+	},
 );

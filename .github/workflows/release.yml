@@ -38,6 +38,25 @@ jobs:
                       main.js
                       ${{ steps.styles.outputs.exists == 'true' && 'styles.css' || '' }}
 
+            - name: Extract release notes from CHANGELOG
+              id: notes
+              run: |
+                  tag="${GITHUB_REF#refs/tags/}"
+                  notes_file="$(mktemp)"
+                  # Match `## [<tag>]` or `## [v<tag>]` — release notes for the
+                  # tag; stop at the next `## [` header. Falls back to empty
+                  # notes if the section is missing (release stays draft, so
+                  # the maintainer can edit).
+                  awk -v tag="$tag" '
+                    BEGIN { start = 0 }
+                    /^## \[/ {
+                      if (start) exit
+                      if ($0 ~ "^## \\[v?" tag "\\]") { start = 1; next }
+                    }
+                    start { print }
+                  ' CHANGELOG.md > "$notes_file" || true
+                  echo "file=$notes_file" >> "$GITHUB_OUTPUT"
+
             - name: Create release
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -47,4 +66,5 @@ jobs:
                   gh release create "$tag" \
                     --title="$tag" \
                     --draft \
+                    --notes-file "${{ steps.notes.outputs.file }}" \
                     main.js manifest.json ${{ steps.styles.outputs.exists == 'true' && 'styles.css' || '' }}
