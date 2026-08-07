@@ -11,7 +11,8 @@
 		"lint": "eslint .",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"test:coverage": "vitest run --coverage"
+		"test:coverage": "vitest run --coverage",
+		"verify": "npm test && npm run build && npm run lint"
 	},
 	"keywords": [
 		"obsidian-plugin",
