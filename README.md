@@ -15,6 +15,7 @@ From the community plugin directory:
 
 ## Features
 
+### Core (v1.0)
 - **4-provider metasearch**: Aladin (Korean primary) · Kakao (Korean recall) · Google Books (foreign primary) · Open Library (foreign covers/ISBN)
 - **Two strategies**: Sequential fallback (default) or parallel Fanout with ISBN13 dedupe
 - **Commands**: Search books · Search by ISBN · Search based on current note · Update book info · Migration helper
@@ -25,6 +26,16 @@ From the community plugin directory:
 - **API keys masked** in settings with click-to-reveal
 - **Cover thumbnails** in search results (opt-in)
 - **Naver EOL migration**: opt-in helper detects an existing `obsidian-book-search-plugin` config and guides users through Aladin setup
+
+### v1.1 additions
+- **Auto-filled Abstract / Description section** — new notes get the provider's book description written into the `## Abstract / Description` block (HTML stripped). "Update book info in current note" refreshes it while preserving edits outside the auto-block markers.
+- **ISBN13 vault-wide duplicate detection** — before creating a note, the plugin scans the vault. On match, `DuplicateModal` offers: open existing / update existing / create anyway / cancel. Backed by an incremental `VaultBookIndex`.
+- **Reading Log** — three commands ("Mark book as wishlist / reading / read") with automatic `startedAt` / `finishedAt` date stamping (idempotent). New notes get a configurable initial status (default: `wishlist`).
+- **Insert book citation at cursor** — editor command that emits a wikilink to an existing vault note (if any) or an unresolved link. Two link styles.
+- **Aladin used-book price check** (opt-in) — surfaces used-book minimum prices as a Notice or appended `## Price Watch` section.
+- **Redacted error diagnostics** — healthcheck / migration failures auto-write a diagnostics note with secrets masked, so users can attach it to bug reports.
+
+See [`CHANGELOG.md`](CHANGELOG.md) for the full v1.1.0 changelog.
 
 ## Provider setup
 
@@ -39,11 +50,21 @@ Only Aladin and Kakao require API keys (both free, instant issuance). Google Boo
 
 After installing, open **Settings → Book Metasearch → Providers**, paste keys, and hit **Healthcheck** on each provider.
 
+## Screenshots
+
+<!--
+Screenshots go here once captured. Store them in `docs/images/` and reference
+them with absolute raw.githubusercontent.com URLs so they render on Obsidian
+community pages that don't clone the repo. See `docs/images/README.md`.
+-->
+
+_Screenshots coming soon — search modal, settings tab, migration helper, and duplicate detection UX._
+
 ## Attribution
 
 - **Aladin**: Book DB by Aladin ([aladin.co.kr](https://www.aladin.co.kr))
 
-The Aladin OpenAPI terms require linking each search result back to Aladin's product page. Leave the credit link toggle on if you keep the Aladin provider enabled.
+The Aladin OpenAPI general-tier terms don't strictly mandate a credit link, but keeping the "Book DB by Aladin" footer in generated notes is the polite (and forward-compatible if you ever upgrade to the premium tier). Leave the credit toggle on unless you have a specific reason.
 
 ## Development
 
