@@ -32,7 +32,7 @@ export class DuplicateModal extends Modal {
 
 		contentEl.createEl('h2', { text: '이미 이 책이 볼트에 있습니다' });
 
-		const info = contentEl.createEl('div', {
+		const info = contentEl.createDiv({
 			cls: 'setting-item-description',
 		});
 		info.createSpan({

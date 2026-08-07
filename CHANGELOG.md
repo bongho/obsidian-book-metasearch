@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-08-07
+
+### Changed
+
+- Swapped `contentEl.createEl('div', ...)` for the more idiomatic
+  `contentEl.createDiv(...)` in `DuplicateModal`, following the
+  `obsidianmd/prefer-create-el` guideline. Purely stylistic — behavior
+  unchanged.
+
+### Removed
+
+- The temporary "_Screenshots coming soon_" placeholder from `README.md`
+  (and its accompanying `<!--...-->` template block). Real screenshots
+  will land later without a preview note in the meantime — placeholder
+  text was tripping the community-plugin reviewer.
+
+### Notes
+
+The reviewer also recommended migrating the `.setWarning()` button call
+to `.setDestructive()`. That API requires Obsidian ≥ 1.13.0, but our
+`minAppVersion` is still `1.4.4` for backward compatibility. Deferred
+until we bump `minAppVersion` in a future release.
+
 ## [1.2.0] - 2026-08-07
 
 ### Added
@@ -139,7 +162,8 @@ dedupe + Reading Log), M2 (citation insert), M3 (Aladin used-price), and M4
   `obsidian-book-search-plugin` config and guides users through Aladin
   setup.
 
-[Unreleased]: https://github.com/bongho/obsidian-book-metasearch/compare/1.2.0...HEAD
+[Unreleased]: https://github.com/bongho/obsidian-book-metasearch/compare/1.2.1...HEAD
+[1.2.1]: https://github.com/bongho/obsidian-book-metasearch/compare/1.2.0...1.2.1
 [1.2.0]: https://github.com/bongho/obsidian-book-metasearch/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/bongho/obsidian-book-metasearch/compare/1.0.1...1.1.0
 [1.0.1]: https://github.com/bongho/obsidian-book-metasearch/compare/1.0.0...1.0.1

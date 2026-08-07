@@ -50,16 +50,6 @@ Only Aladin and Kakao require API keys (both free, instant issuance). Google Boo
 
 After installing, open **Settings → Book Metasearch → Providers**, paste keys, and hit **Healthcheck** on each provider.
 
-## Screenshots
-
-<!--
-Screenshots go here once captured. Store them in `docs/images/` and reference
-them with absolute raw.githubusercontent.com URLs so they render on Obsidian
-community pages that don't clone the repo. See `docs/images/README.md`.
--->
-
-_Screenshots coming soon — search modal, settings tab, migration helper, and duplicate detection UX._
-
 ## Attribution
 
 - **Aladin**: Book DB by Aladin ([aladin.co.kr](https://www.aladin.co.kr))
