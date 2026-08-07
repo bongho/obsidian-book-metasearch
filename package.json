@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-book-metasearch",
-	"version": "1.2.1",
+	"version": "1.2.2",
 	"description": "Book note maker with metasearch across Aladin, Kakao, Google Books, and Open Library.",
 	"main": "main.js",
 	"type": "module",
