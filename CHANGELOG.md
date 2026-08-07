@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-08-07
+
+### Added
+
+- **Declarative settings API (Obsidian 1.13+ Settings search)** —
+  `BookMetasearchSettingTab.getSettingDefinitions()` now returns a
+  `SettingDefinitionItem[]` describing every user-facing setting in one
+  place (`src/ui/settings-definitions.ts`), so Obsidian 1.13+'s built-in
+  Settings search bar can find and jump to each option. The existing
+  `display()` still owns rendering (including action-only rows like
+  provider healthcheck buttons that don't map to declarative controls);
+  the two code paths run in parallel and don't compete. Each control's
+  `key` matches its `BookMetasearchSettings` field, so the framework's
+  default `getControlValue`/`setControlValue` handle read/write with no
+  glue. `aliases` are added on every control to widen search recall
+  (e.g. `["ttb", "aladin", "api key"]` for the Aladin TTB Key). Resolves
+  the Obsidian community-plugin review warning shipped since v1.0.1.
+
+### Changed
+
+- `obsidian` devDependency bumped `1.12.3 → 1.13.1` to pick up the
+  `SettingDefinitionItem` types.
+
 ## [1.1.0] - 2026-08-07
 
 ### Added
@@ -116,7 +139,8 @@ dedupe + Reading Log), M2 (citation insert), M3 (Aladin used-price), and M4
   `obsidian-book-search-plugin` config and guides users through Aladin
   setup.
 
-[Unreleased]: https://github.com/bongho/obsidian-book-metasearch/compare/1.1.0...HEAD
+[Unreleased]: https://github.com/bongho/obsidian-book-metasearch/compare/1.2.0...HEAD
+[1.2.0]: https://github.com/bongho/obsidian-book-metasearch/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/bongho/obsidian-book-metasearch/compare/1.0.1...1.1.0
 [1.0.1]: https://github.com/bongho/obsidian-book-metasearch/compare/1.0.0...1.0.1
 [1.0.0]: https://github.com/bongho/obsidian-book-metasearch/releases/tag/1.0.0
