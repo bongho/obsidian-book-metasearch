@@ -305,20 +305,21 @@ export default class BookMetasearchPlugin extends Plugin {
 		}
 		// 'section' — append a timestamped row to the note body. Header is
 		// only inserted the first time; subsequent checks append rows only.
-		const body = await this.app.vault.read(file);
 		const rows = sorted.map((q) => {
 			const price = (q.priceKrw ?? 0).toLocaleString();
 			const link = q.link ? ` — [보기](${q.link})` : '';
 			return `- ${q.fetchedAt.slice(0, 10)} · ${q.provider} · ${q.condition} · ₩${price}${link}`;
 		});
-		const separator = body.endsWith('\n') ? '' : '\n';
-		const prelude = body.includes('## Price Watch')
-			? '\n'
-			: '\n## Price Watch\n\n';
-		await this.app.vault.modify(
-			file,
-			body + separator + prelude + rows.join('\n') + '\n',
-		);
+		// process() reads and writes atomically. A read-then-modify pair would
+		// drop anything the user typed while the price lookup was in flight,
+		// and a network round-trip is plenty of time for that.
+		await this.app.vault.process(file, (body) => {
+			const separator = body.endsWith('\n') ? '' : '\n';
+			const prelude = body.includes('## Price Watch')
+				? '\n'
+				: '\n## Price Watch\n\n';
+			return body + separator + prelude + rows.join('\n') + '\n';
+		});
 		new Notice(summary + ' (노트 하단 Price Watch에 추가됨)', 6000);
 	}
 
