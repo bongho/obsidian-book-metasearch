@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Development toolchain only — no change to the plugin users install. Everything
+below lives in `devDependencies` or CI config and never reaches the bundled
+`main.js`, so this does not warrant a release on its own.
+
+### Security
+
+- Bumped `vitest` 2.1.9 → 3 and `@vitest/coverage-v8` to match, clearing two
+  critical advisories in `@vitest/mocker` (arbitrary file read/execute while
+  the Vitest UI server is listening). Dependabot never proposed this because
+  the fix needs a major bump — `npm audit` surfaced it instead. With the
+  follow-up `npm audit fix` for transitive `brace-expansion` and `fast-uri`
+  advisories, `npm audit` goes from 9 vulnerabilities to 0.
+
+### Changed
+
+- Dependency bumps: `eslint` 9 → 10, `@types/node` 22 → 26, `happy-dom` 15 →
+  20, `esbuild` 0.25.5 → 0.28.1 (includes a path-traversal fix in esbuild's
+  dev server), `eslint-plugin-obsidianmd` 0.4.1, `globals`, `typescript-eslint`,
+  and the `actions/checkout` + `actions/setup-node` CI actions to v7.
+- Configured `obsidianmd/ui/sentence-case` with this plugin's own vocabulary
+  (acronyms, provider brand names, and an ignore list for Korean UI copy and
+  literal placeholder strings), taking lint from 48 warnings to 2. The rule
+  stays on so it keeps checking English UI strings.
+
+### Fixed
+
+- Sentence case in six UI strings the rule was right about: four settings
+  names ending in `Key` → `key`, plus the `Reading log` and `Price check`
+  headings.
+
 ## [1.2.2] - 2026-08-07
 
 ### Reverted

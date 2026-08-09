@@ -30,16 +30,46 @@ npm test           # Vitest, run once
 npm run test:watch # Vitest, watch mode
 npm run lint       # ESLint (obsidianmd rules + typescript-eslint)
 npm run build      # tsc --noEmit + esbuild production bundle
+npm run verify     # all three at once — the pre-merge check
 ```
 
 CI (`.github/workflows/lint.yml`) runs `build → lint → test` on Node 20 / 22 /
-24. Failing tests / lint errors block merge; sentence-case warnings are
-tolerated.
+24. Failing tests and lint errors block merge.
+
+Lint should sit at **0 errors and 2 warnings**. Both warnings are deliberate
+and documented where they occur — a deprecated `setWarning()` call that can't
+be replaced until `minAppVersion` rises, and the settings tab opting out of
+the declarative API (see [#11](https://github.com/bongho/obsidian-book-metasearch/issues/11)).
+If you see a third, it's yours.
+
+`main` is protected on GitHub (not in-repo config): force-push and branch
+deletion are blocked, and the three CI jobs must pass before merge. There's no
+required review, since this is a solo-maintained repo. Change it under
+**Settings → Branches**.
+
+For a dependency bump, run `npm run verify` against the change locally rather
+than trusting a green CI badge — CI installs from the PR's lockfile, which
+tells you the install resolved, not that the new versions behave.
 
 Test files live next to sources (`src/**/*.test.ts`). Pure utilities are
 tested directly; anything that needs Obsidian APIs (`App`, `Vault`,
 `SuggestModal`, `requestUrl`) is stubbed via `src/__mocks__/obsidian.ts` —
 grow the stub as new call sites appear.
+
+## Known constraints
+
+**`@eslint/js` stays on 9.x while `eslint` itself is on 10.x.** This looks like
+an oversight in `package.json` but isn't: `eslint-plugin-obsidianmd@0.4.1`
+requires `@eslint/js@^9.30.1` directly, so `@eslint/js@10` — which wants an
+`eslint@^10` peer — can't resolve in any combination. Bumping `eslint` alone
+works, which is why the versions look mismatched. Dependabot will keep
+proposing the `@eslint/js` major; it was closed unmergeable once already
+(#6) and will stay that way until the plugin bumps its own requirement. Don't
+re-debug the resolver.
+
+**Merging anything under `.github/workflows/` needs the `workflow` OAuth
+scope.** GitHub enforces this server-side, so with an HTTPS remote there's no
+local-push workaround — run `gh auth refresh -s workflow` first.
 
 ## Adding a provider
 
