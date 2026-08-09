@@ -121,6 +121,12 @@ const LOCALES: readonly { code: string; label: string }[] = [
  *   4. Search UI   — cover thumbnails, upcoming provider config (stubs)
  *   5. Attribution — Aladin credit link toggle
  *   6. Tools       — Naver EOL migration helper (opt-in)
+ *
+ * This deliberately does not implement getSettingDefinitions(), so eslint's
+ * obsidianmd/settings-tab/prefer-setting-definitions warning is expected here.
+ * The declarative API replaces display() rather than composing with it, which
+ * cost us API-key masking and the healthcheck buttons in v1.2.0 — rolled back
+ * in v1.2.2. Reopening conditions: #11
  */
 export class BookMetasearchSettingTab extends PluginSettingTab {
 	constructor(
