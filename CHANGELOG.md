@@ -7,11 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Development toolchain only — no change to the plugin users install. Everything
-below lives in `devDependencies` or CI config and never reaches the bundled
-`main.js`, so this does not warrant a release on its own.
+## [1.2.3] - 2026-08-09
+
+### Fixed
+
+- **Concurrent edits to a note are no longer overwritten.** Appending a Price
+  Watch row and refreshing the auto-filled description both read the note,
+  built a new body from it, and wrote that back. Anything typed in between —
+  and an Aladin price lookup leaves a whole network round-trip of room — was
+  silently discarded. Both paths now use `Vault.process()`, which reads and
+  writes as one atomic operation.
+- Sentence case in six UI strings: four settings names ending in `Key` → `key`,
+  plus the `Reading log` and `Price check` headings.
 
 ### Security
+
+Development-toolchain only — the packages below live in `devDependencies` and
+never reach the bundled `main.js`.
 
 - Bumped `vitest` 2.1.9 → 3 and `@vitest/coverage-v8` to match, clearing two
   critical advisories in `@vitest/mocker` (arbitrary file read/execute while
@@ -30,12 +42,6 @@ below lives in `devDependencies` or CI config and never reaches the bundled
   (acronyms, provider brand names, and an ignore list for Korean UI copy and
   literal placeholder strings), taking lint from 48 warnings to 2. The rule
   stays on so it keeps checking English UI strings.
-
-### Fixed
-
-- Sentence case in six UI strings the rule was right about: four settings
-  names ending in `Key` → `key`, plus the `Reading log` and `Price check`
-  headings.
 
 ## [1.2.2] - 2026-08-07
 

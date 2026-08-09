@@ -187,12 +187,17 @@ export class NoteWriter {
 		);
 
 		if (this.settings.autoFillDescription) {
-			const body = await this.app.vault.read(file);
 			const cleaned = stripHtml(book.description ?? '');
-			const { updated, found } = replaceAutoBlock(body, cleaned);
-			if (found && updated !== body) {
-				await this.app.vault.modify(file, updated);
-			} else if (!found) {
+			// process() reads and writes atomically, so a concurrent user edit
+			// can't be clobbered between the two. Returning body unchanged when
+			// the markers are missing leaves the note untouched.
+			let markersFound = true;
+			await this.app.vault.process(file, (body) => {
+				const { updated, found } = replaceAutoBlock(body, cleaned);
+				markersFound = found;
+				return found ? updated : body;
+			});
+			if (!markersFound) {
 				console.warn(
 					`[book-metasearch] auto-block markers missing in ${file.path}; description not refreshed`,
 				);
