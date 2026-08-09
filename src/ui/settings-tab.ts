@@ -148,7 +148,7 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 		{
 			let inputRef!: TextComponent;
 			const setting = new Setting(containerEl)
-				.setName('Aladin TTB Key')
+				.setName('Aladin TTB key')
 				.setDesc('알라딘 오픈 API 키. 발급 페이지에서 무료로 받을 수 있습니다.')
 				.addText((text) => {
 					inputRef = text;
@@ -199,7 +199,7 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 		{
 			let inputRef!: TextComponent;
 			const setting = new Setting(containerEl)
-				.setName('Kakao REST API Key')
+				.setName('Kakao REST API key')
 				.setDesc('Kakao Developers 애플리케이션의 REST API 키. 즉시 발급, 승인 대기 없음.')
 				.addText((text) => {
 					inputRef = text;
@@ -249,7 +249,7 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 		{
 			let inputRef!: TextComponent;
 			const setting = new Setting(containerEl)
-				.setName('Google Books API Key')
+				.setName('Google Books API key')
 				.setDesc(
 					'선택 사항 — 없어도 검색은 되지만 rate limit이 낮습니다. ' +
 						'Google Cloud Console에서 Books API 활성화 후 발급받으면 1,000/day 무료.',
@@ -603,7 +603,7 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 			);
 
 		// ── 7. Reading Log ───────────────────────────
-		new Setting(containerEl).setName('Reading Log').setHeading();
+		new Setting(containerEl).setName('Reading log').setHeading();
 
 		new Setting(containerEl)
 			.setName('독서 상태 필드 활성화')
@@ -678,7 +678,7 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 			);
 
 		// ── 9. Price Check ──────────────────────────
-		new Setting(containerEl).setName('Price Check').setHeading();
+		new Setting(containerEl).setName('Price check').setHeading();
 
 		new Setting(containerEl)
 			.setName('Aladin 중고가 조회 활성화')

@@ -83,6 +83,12 @@ export class DuplicateModal extends Modal {
 			.addButton((btn) =>
 				btn
 					.setButtonText('무시하고 새로 만들기')
+					// Keep setWarning() until manifest minAppVersion moves past 1.4.4.
+					// setDestructive() only exists in the 1.13 typings, so calling it
+					// would throw a TypeError on the older builds we still declare support
+					// for. Swap both together when minAppVersion is raised — the eslint
+					// config forbids suppressing no-deprecated, so this stays a visible
+					// warning on purpose.
 					.setWarning()
 					.setTooltip(
 						'주의: 같은 책의 별도 판본이거나 정말로 두 벌이 필요할 때만 사용.',

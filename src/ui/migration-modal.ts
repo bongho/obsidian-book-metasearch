@@ -84,7 +84,7 @@ export class MigrationModal extends Modal {
 		// ── Step 2: TTB Key 붙여넣기 + Healthcheck ──────────
 		contentEl.createEl('h3', { text: '2. TTB Key 등록 & 검증' });
 		new Setting(contentEl)
-			.setName('TTB Key')
+			.setName('TTB key')
 			.setDesc('발급받은 키를 붙여넣으세요.')
 			.addText((text) =>
 				text
