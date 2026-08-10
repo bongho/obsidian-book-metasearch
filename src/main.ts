@@ -315,7 +315,7 @@ export default class BookMetasearchPlugin extends Plugin {
 		// and a network round-trip is plenty of time for that.
 		await this.app.vault.process(file, (body) => {
 			const separator = body.endsWith('\n') ? '' : '\n';
-			const prelude = body.includes('## Price Watch')
+			const prelude = /^## Price Watch$/m.test(body)
 				? '\n'
 				: '\n## Price Watch\n\n';
 			return body + separator + prelude + rows.join('\n') + '\n';

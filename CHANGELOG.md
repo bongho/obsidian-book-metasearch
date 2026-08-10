@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Price Watch heading detection now anchors to the start of a line
+  (`/^## Price Watch$/m`) instead of a bare substring match. A note that
+  mentioned `## Price Watch` inside inline code or prose was previously read
+  as an existing heading, so subsequent rows appended with no heading above
+  them. Rows still landed in the note (nothing was overwritten); only the
+  heading was missing. (#15)
+
 ## [1.2.3] - 2026-08-09
 
 ### Fixed
