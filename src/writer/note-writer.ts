@@ -76,6 +76,20 @@ export function replaceAutoBlock(
 }
 
 /**
+ * Appends timestamped price rows to the note, inserting the `## Price Watch`
+ * heading only the first time.
+ *
+ * The heading test is anchored to the start of a line. A bare `includes()`
+ * also matched notes that merely *mention* `## Price Watch` in prose or inline
+ * code, which made the rows append with no heading above them (#15).
+ */
+export function appendPriceWatchRows(body: string, rows: string[]): string {
+	const separator = body.endsWith('\n') ? '' : '\n';
+	const prelude = /^## Price Watch$/m.test(body) ? '\n' : '\n## Price Watch\n\n';
+	return body + separator + prelude + rows.join('\n') + '\n';
+}
+
+/**
  * Turns a `Book` from the search modal into a note file in the vault, matching
  * bongho's existing `85. References (Book Search)/` schema by default, but with
  * anpigon book-search style customization hooks:

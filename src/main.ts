@@ -18,7 +18,7 @@ import { MigrationModal } from './ui/migration-modal';
 import { BookSearchModal } from './ui/search-modal';
 import { BookMetasearchSettingTab } from './ui/settings-tab';
 import { formatCitation } from './util/citation';
-import { NoteWriter } from './writer/note-writer';
+import { appendPriceWatchRows, NoteWriter } from './writer/note-writer';
 import { DuplicateBookError, VaultBookIndex } from './writer/vault-index';
 
 /**
@@ -313,13 +313,7 @@ export default class BookMetasearchPlugin extends Plugin {
 		// process() reads and writes atomically. A read-then-modify pair would
 		// drop anything the user typed while the price lookup was in flight,
 		// and a network round-trip is plenty of time for that.
-		await this.app.vault.process(file, (body) => {
-			const separator = body.endsWith('\n') ? '' : '\n';
-			const prelude = /^## Price Watch$/m.test(body)
-				? '\n'
-				: '\n## Price Watch\n\n';
-			return body + separator + prelude + rows.join('\n') + '\n';
-		});
+		await this.app.vault.process(file, (body) => appendPriceWatchRows(body, rows));
 		new Notice(summary + ' (노트 하단 Price Watch에 추가됨)', 6000);
 	}
 

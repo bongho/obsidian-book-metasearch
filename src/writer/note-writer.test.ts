@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { deriveStatusUpdates, replaceAutoBlock } from './note-writer';
+import {
+	appendPriceWatchRows,
+	deriveStatusUpdates,
+	replaceAutoBlock,
+} from './note-writer';
 
 const identity = (k: string) => k;
 const TODAY = '2026-08-07';
@@ -58,6 +62,57 @@ describe('replaceAutoBlock', () => {
 		const { updated, found } = replaceAutoBlock(body, 'ignored');
 		expect(found).toBe(false);
 		expect(updated).toBe(body);
+	});
+});
+
+describe('appendPriceWatchRows', () => {
+	const ROW = '- 2026-08-17 · aladin · 중고 · ₩8,000';
+
+	it('inserts the heading when the note has none', () => {
+		const updated = appendPriceWatchRows('# 책 노트\n', [ROW]);
+		expect(updated).toBe(`# 책 노트\n\n## Price Watch\n\n${ROW}\n`);
+	});
+
+	it('appends bare rows when a real heading already exists', () => {
+		const body = `# 책 노트\n\n## Price Watch\n\n${ROW}\n`;
+		const updated = appendPriceWatchRows(body, ['- second row']);
+		expect(updated).toBe(`${body}\n- second row\n`);
+		expect(updated.match(/^## Price Watch$/gm)).toHaveLength(1);
+	});
+
+	// #15 — `includes()` read this sentence as an existing heading and the
+	// rows appended with no heading above them.
+	it('still inserts the heading when the phrase only appears in inline code', () => {
+		const body = '- 아래 `## Price Watch`가 이 줄 뒤에 새로 붙는 게 정상입니다.\n';
+		const updated = appendPriceWatchRows(body, [ROW]);
+		expect(updated.match(/^## Price Watch$/gm)).toHaveLength(1);
+		expect(updated).toContain(`\n## Price Watch\n\n${ROW}\n`);
+	});
+
+	it('still inserts the heading when the phrase appears mid-sentence in prose', () => {
+		const body = 'The plugin writes a ## Price Watch section at the bottom.\n';
+		const updated = appendPriceWatchRows(body, [ROW]);
+		expect(updated.match(/^## Price Watch$/gm)).toHaveLength(1);
+	});
+
+	it('does not treat a deeper heading level as the Price Watch heading', () => {
+		const updated = appendPriceWatchRows('### Price Watch\n', [ROW]);
+		expect(updated).toContain('\n## Price Watch\n');
+	});
+
+	it('normalizes a body that does not end in a newline', () => {
+		const updated = appendPriceWatchRows('no trailing newline', [ROW]);
+		expect(updated).toBe(`no trailing newline\n\n## Price Watch\n\n${ROW}\n`);
+	});
+
+	it('joins multiple rows with single newlines under one heading', () => {
+		const updated = appendPriceWatchRows('body\n', ['- a', '- b', '- c']);
+		expect(updated).toBe('body\n\n## Price Watch\n\n- a\n- b\n- c\n');
+	});
+
+	it('never overwrites existing note content', () => {
+		const body = '# 책 노트\n\n사용자가 쓴 메모\n';
+		expect(appendPriceWatchRows(body, [ROW]).startsWith(body)).toBe(true);
 	});
 });
 
