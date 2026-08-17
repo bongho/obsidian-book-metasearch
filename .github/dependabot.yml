@@ -11,6 +11,21 @@ updates:
     labels:
       - 'dependencies'
     groups:
+      # Listed first on purpose: a dependency joins the first group it matches,
+      # so this has to win over dev-dependencies below.
+      #
+      # `@vitest/coverage-v8` peer-depends on the exact vitest version, so the
+      # two only install together. Split across separate PRs each side fails
+      # npm ci with ERESOLVE — which is what happened to #16/#18 when vitest
+      # 3 -> 4 fell outside the minor/patch group. Majors are grouped here.
+      vitest:
+        patterns:
+          - 'vitest'
+          - '@vitest/*'
+        update-types:
+          - 'major'
+          - 'minor'
+          - 'patch'
       dev-dependencies:
         dependency-type: 'development'
         update-types:
