@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.4] - 2026-08-23
+
 ### Fixed
 
 - Price Watch heading detection now anchors to the start of a line
@@ -31,6 +33,9 @@ Development-toolchain only — none of this reaches the bundled `main.js`.
 - Created the `dependencies` and `github-actions` labels that
   `.github/dependabot.yml` asks for; every Dependabot PR had been opened with a
   "labels could not be found" warning instead.
+- Patch-level dev-dependency bumps: `@types/node` 26.1.2 → 26.2.0, `esbuild`
+  0.28.1 → 0.28.2, `eslint` 10.8.0 → 10.8.1, `globals` 17.9.0 → 17.11.0,
+  `happy-dom` 20.11.1 → 20.11.2, `typescript-eslint` 8.66.0 → 8.67.0. (#20)
 
 ## [1.2.3] - 2026-08-09
 
