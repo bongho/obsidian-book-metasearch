@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+Development-toolchain only — none of this reaches the bundled `main.js`.
+
+- `vitest` and `@vitest/coverage-v8` 3.2.7 -> 4.1.11, as one grouped bump now
+  that the group actually pairs them. 55 tests pass on Node 20 / 22 / 24. (#24)
+- Ignore the `coverage/` output of `npm run test:coverage`, and document in
+  CONTRIBUTING that vitest 4's rolldown binary needs npm >= 10.9 to install.
+
 ## [1.2.4] - 2026-08-23
 
 ### Fixed

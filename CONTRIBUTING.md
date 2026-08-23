@@ -67,6 +67,21 @@ proposing the `@eslint/js` major; it was closed unmergeable once already
 (#6) and will stay that way until the plugin bumps its own requirement. Don't
 re-debug the resolver.
 
+**`npm ci` needs npm >= 10.9; npm 10.8.1 installs no rolldown binary.** vitest 4
+pulls in rolldown, whose native binding ships as a platform-specific optional
+dependency. npm 10.8.1 (bundled with Node 20.16) resolves `package-lock.json`
+but installs none of them — `node_modules/@rolldown/` ends up holding only
+`pluginutils`, and every `npm test` dies with `Cannot find module
+'@rolldown/binding-wasm32-wasi'`. The lockfile is fine and vitest is fine; it is
+the installer. Run installs with a newer npm, e.g.
+
+    PATH="/opt/homebrew/opt/node@22/bin:$PATH" npm ci
+
+The binding is architecture-native rather than Node-version-specific, so once it
+is installed the default `node`/`npm` on the machine runs `npm test`,
+`npm run verify`, and `npm run test:coverage` normally. CI is unaffected —
+`actions/setup-node` ships a current npm on all three matrix versions.
+
 **Dependabot groups are resolved by specificity, not by declaration order.**
 A group keyed on `dependency-type` outranks one keyed on `patterns`, so listing
 a narrow `patterns` group first does not keep its packages out of a broader
