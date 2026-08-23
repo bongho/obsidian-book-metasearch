@@ -16,6 +16,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   them. Rows still landed in the note (nothing was overwritten); only the
   heading was missing. (#15)
 
+### Changed
+
+Development-toolchain only — none of this reaches the bundled `main.js`.
+
+- Dependabot's `vitest` group now actually holds `vitest` and
+  `@vitest/coverage-v8` together. Grouping them (#21) was not enough: Dependabot
+  assigns a dependency by group specificity rather than declaration order, and
+  it ranks `dependency-type` above `patterns`, so `@vitest/coverage-v8` kept
+  falling into the broader `dev-dependencies` group. #22 then shipped `vitest`
+  alone and failed `npm ci` with ERESOLVE against the pinned peer — the very
+  split the group was added to prevent. The `dev-dependencies` group now
+  excludes both patterns explicitly.
+- Created the `dependencies` and `github-actions` labels that
+  `.github/dependabot.yml` asks for; every Dependabot PR had been opened with a
+  "labels could not be found" warning instead.
+
 ## [1.2.3] - 2026-08-09
 
 ### Fixed

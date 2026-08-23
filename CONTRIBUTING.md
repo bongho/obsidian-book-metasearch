@@ -67,6 +67,13 @@ proposing the `@eslint/js` major; it was closed unmergeable once already
 (#6) and will stay that way until the plugin bumps its own requirement. Don't
 re-debug the resolver.
 
+**Dependabot groups are resolved by specificity, not by declaration order.**
+A group keyed on `dependency-type` outranks one keyed on `patterns`, so listing
+a narrow `patterns` group first does not keep its packages out of a broader
+dev-dependency group. `vitest` and `@vitest/coverage-v8` have to install as a
+pair (exact peer pin), so `dev-dependencies` carries an explicit
+`exclude-patterns` for them. Removing it puts the ERESOLVE split of #22 back.
+
 **Merging anything under `.github/workflows/` needs the `workflow` OAuth
 scope.** GitHub enforces this server-side, so with an HTTPS remote there's no
 local-push workaround — run `gh auth refresh -s workflow` first.
