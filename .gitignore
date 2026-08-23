@@ -8,6 +8,9 @@
 # npm
 node_modules
 
+# vitest coverage output (`npm run test:coverage`)
+coverage
+
 # Don't include the compiled main.js file in the repo.
 # They should be uploaded to GitHub releases instead.
 main.js
