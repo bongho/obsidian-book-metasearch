@@ -11,13 +11,17 @@ updates:
     labels:
       - 'dependencies'
     groups:
-      # Listed first on purpose: a dependency joins the first group it matches,
-      # so this has to win over dev-dependencies below.
-      #
       # `@vitest/coverage-v8` peer-depends on the exact vitest version, so the
       # two only install together. Split across separate PRs each side fails
       # npm ci with ERESOLVE — which is what happened to #16/#18 when vitest
       # 3 -> 4 fell outside the minor/patch group. Majors are grouped here.
+      #
+      # Listing this group first does NOT make it win: Dependabot assigns a
+      # dependency by group *specificity*, not by declaration order, and it
+      # scores `dependency-type` above `patterns`. So `@vitest/coverage-v8`
+      # went to dev-dependencies anyway and #22 shipped vitest alone —
+      # exactly the ERESOLVE split this group exists to prevent. The
+      # `exclude-patterns` below is what actually keeps the pair together.
       vitest:
         patterns:
           - 'vitest'
@@ -28,6 +32,9 @@ updates:
           - 'patch'
       dev-dependencies:
         dependency-type: 'development'
+        exclude-patterns:
+          - 'vitest'
+          - '@vitest/*'
         update-types:
           - 'minor'
           - 'patch'
