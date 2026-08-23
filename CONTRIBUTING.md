@@ -147,8 +147,17 @@ afterwards, on its own — branch protection does not cover tags.
    - `gh release create --draft` uploads `main.js`, `manifest.json`,
      `styles.css`.
 6. Review the draft on GitHub, then click Publish.
-7. For a new community-plugin manifest version, submit / update the PR to
-   [obsidianmd/obsidian-releases](https://github.com/obsidianmd/obsidian-releases).
+
+That's the whole release. **A version bump needs no PR to
+[obsidianmd/obsidian-releases](https://github.com/obsidianmd/obsidian-releases)** —
+`community-plugins.json` carries only `id`, `name`, `author`, `description`, and
+`repo`, with no version field, and this plugin's entry is already in it. Per that
+repo's own README, "the `manifest.json` in your repo will only be used to figure
+out the latest version. Actual files are fetched from your GitHub releases," and
+Obsidian "will look for your GitHub releases tagged identically to the version
+inside `manifest.json`". So publishing the release is what ships the update; the
+only things that need a PR over there are the initial listing and later changes
+to those five directory fields.
 
 ## Filing bugs
 
