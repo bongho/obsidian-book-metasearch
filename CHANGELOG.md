@@ -14,7 +14,14 @@ Development-toolchain only — none of this reaches the bundled `main.js`.
 - `vitest` and `@vitest/coverage-v8` 3.2.7 -> 4.1.11, as one grouped bump now
   that the group actually pairs them. 55 tests pass on Node 20 / 22 / 24. (#24)
 - Ignore the `coverage/` output of `npm run test:coverage`, and document in
-  CONTRIBUTING that vitest 4's rolldown binary needs npm >= 10.9 to install.
+  CONTRIBUTING that npm 10.8.1 cannot install vitest 4's rolldown binary.
+- Declare the floor as `engines.npm >= 10.8.2` with `engine-strict=true`, so a
+  broken npm aborts with `EBADENGINE` rather than installing a tree whose tests
+  cannot run. 10.8.2 rather than 10.9: `actions/setup-node` gives Node 20.x npm
+  10.8.2, so a higher floor would fail the required `build (20.x)` check.
+- Releases now go through a PR: `main` enforces its checks on admins too, and
+  the tag is pushed separately afterwards. CONTRIBUTING carries the revised
+  steps.
 
 ## [1.2.4] - 2026-08-23
 

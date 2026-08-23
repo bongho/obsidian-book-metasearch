@@ -67,7 +67,7 @@ proposing the `@eslint/js` major; it was closed unmergeable once already
 (#6) and will stay that way until the plugin bumps its own requirement. Don't
 re-debug the resolver.
 
-**`npm ci` needs npm >= 10.9; npm 10.8.1 installs no rolldown binary.** vitest 4
+**npm 10.8.1 installs no rolldown binary; `npm ci` needs >= 10.8.2.** vitest 4
 pulls in rolldown, whose native binding ships as a platform-specific optional
 dependency. npm 10.8.1 (bundled with Node 20.16) resolves `package-lock.json`
 but installs none of them — `node_modules/@rolldown/` ends up holding only
@@ -81,6 +81,18 @@ The binding is architecture-native rather than Node-version-specific, so once it
 is installed the default `node`/`npm` on the machine runs `npm test`,
 `npm run verify`, and `npm run test:coverage` normally. CI is unaffected —
 `actions/setup-node` ships a current npm on all three matrix versions.
+
+`package.json` declares `engines.npm >= 10.8.2` and `.npmrc` sets
+`engine-strict=true`, so an npm below the floor now aborts the install with
+`EBADENGINE` instead of quietly producing a tree whose tests cannot run.
+
+The floor is 10.8.2 rather than 10.9 because that is what the evidence
+supports, and because the floor has to stay under CI: `actions/setup-node`
+resolves `20.x` to Node 20.20.2, which bundles **npm 10.8.2** — one patch above
+the broken version — while `22.x` gets 10.9.8 and `24.x` gets 11.17.0. A 10.9
+floor would fail the required `build (20.x)` check. Versions observed installing
+the binding correctly: 10.8.2 (linux-x64, CI), 10.9.4 (darwin-arm64, local),
+11.17.0 (linux-x64, CI). Only 10.8.1 has been observed failing.
 
 **Dependabot groups are resolved by specificity, not by declaration order.**
 A group keyed on `dependency-type` outranks one keyed on `patterns`, so listing
@@ -113,13 +125,21 @@ local-push workaround — run `gh auth refresh -s workflow` first.
 
 ## Release process
 
-1. Bump semver in `package.json`.
-2. `npm version <x.y.z>` — runs `version-bump.mjs` to sync `manifest.json` +
-   `versions.json`.
-3. Move the `## [Unreleased]` block in `CHANGELOG.md` to a new `## [x.y.z] -
-   YYYY-MM-DD` heading. The next section header must be `## [`, not text,
-   or the release-notes extractor won't stop.
-4. `git push && git push --tags`.
+`main` requires the three `build` checks and admins are not exempt, so the
+release commit goes through a PR like every other change. The tag is pushed
+afterwards, on its own — branch protection does not cover tags.
+
+1. On a branch, move the `## [Unreleased]` block in `CHANGELOG.md` to a new
+   `## [x.y.z] - YYYY-MM-DD` heading, leaving `## [Unreleased]` empty above it.
+   The next section header must be `## [`, not text, or the release-notes
+   extractor won't stop.
+2. `npm version --no-git-tag-version <x.y.z>` — bumps `package.json` and runs
+   `version-bump.mjs` to sync `manifest.json` + `versions.json`, without making
+   a commit or a tag. Plain `npm version` tags the branch commit, and a squash
+   merge then orphans that tag.
+3. Commit, push, open a PR, merge once the three checks pass.
+4. `git checkout main && git pull`, then `git tag <x.y.z>` and
+   `git push origin <x.y.z>`.
 5. `.github/workflows/release.yml` runs on the tag push:
    - `npm ci && npm run build`
    - Attest provenance on `main.js` (+ `styles.css` if present).

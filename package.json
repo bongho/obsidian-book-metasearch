@@ -29,6 +29,9 @@
 		"type": "git",
 		"url": "https://github.com/bongho/obsidian-book-metasearch.git"
 	},
+	"engines": {
+		"npm": ">=10.8.2"
+	},
 	"devDependencies": {
 		"@eslint/js": "^9.39.4",
 		"@types/node": "^26.2.0",
