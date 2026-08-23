@@ -22,6 +22,11 @@ Development-toolchain only — none of this reaches the bundled `main.js`.
 - Releases now go through a PR: `main` enforces its checks on admins too, and
   the tag is pushed separately afterwards. CONTRIBUTING carries the revised
   steps.
+- Corrected the last release step: a version bump needs no PR to
+  `obsidianmd/obsidian-releases`. `community-plugins.json` has no version field
+  and this plugin is already listed; Obsidian reads the repo's `manifest.json`
+  for the latest version and fetches files from the matching GitHub release. The
+  old wording implied a per-release submission that does not exist.
 
 ## [1.2.4] - 2026-08-23
 
