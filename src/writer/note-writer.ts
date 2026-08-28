@@ -13,17 +13,24 @@ const AUTO_START = '<!-- BOOKSEARCH:AUTO-START -->';
 const AUTO_END = '<!-- BOOKSEARCH:AUTO-END -->';
 
 /**
- * Replace whatever sits between the first `AUTO-START` / `AUTO-END` marker
- * pair with `newContent`, preserving everything else (user edits to `## Why
- * to Read`, credit links, etc.). Only the first pair is touched so nested
- * markers stay intact.
- *
- * `found: false` when either marker is missing — callers should skip the
- * modify call in that case rather than injecting new markers (that would
- * violate the "never touch user body" rule when the user has deleted the
- * auto-block on purpose).
+ * Reading status constants — unified vocabulary for status transitions.
+ * Only 'reading' and 'read' stages trigger Review note creation.
  */
-export type ReadingStatus = 'wishlist' | 'reading' | 'read';
+export const READING_STATUS = {
+	WISHLIST: 'wishlist',
+	READING: 'reading',
+	READ: 'read',
+} as const;
+
+export type ReadingStatus = typeof READING_STATUS[keyof typeof READING_STATUS];
+
+/**
+ * Check if a status transition should create a Review note.
+ * Only 'reading' and 'read' stages are eligible for Review notes.
+ */
+export function shouldCreateReviewNote(status: ReadingStatus): boolean {
+	return status === READING_STATUS.READING || status === READING_STATUS.READ;
+}
 
 /**
  * Pure helper for M1-B "Mark as ..." commands. Given the current frontmatter,
@@ -50,10 +57,10 @@ export function deriveStatusUpdates(
 	const hasStarted = typeof current[startedKey] === 'string' && current[startedKey] !== '';
 	const hasFinished = typeof current[finishedKey] === 'string' && current[finishedKey] !== '';
 
-	if (target === 'reading' && !hasStarted) {
+	if (target === READING_STATUS.READING && !hasStarted) {
 		updates[startedKey] = today;
 	}
-	if (target === 'read') {
+	if (target === READING_STATUS.READ) {
 		if (!hasFinished) updates[finishedKey] = today;
 		if (!hasStarted) updates[startedKey] = today;
 	}
@@ -143,8 +150,10 @@ export class NoteWriter {
 
 	/**
 	 * Set the reading status on an existing book note, stamping `startedAt` /
-	 * `finishedAt` on first transition (idempotent). No-op when the plugin's
-	 * Reading Log is turned off.
+	 * `finishedAt` on first transition (idempotent). When transitioning to
+	 * 'reading' or 'read', also creates a Review note (idempotent — only when
+	 * not already present by basename). No-op when the plugin's Reading Log
+	 * is turned off.
 	 */
 	async setStatus(file: TFile, status: ReadingStatus): Promise<void> {
 		if (!this.settings.readingStatusEnabled) return;
@@ -158,6 +167,64 @@ export class NoteWriter {
 				Object.assign(fm, updates);
 			},
 		);
+
+		if (shouldCreateReviewNote(status)) {
+			await this.createReviewNote(file);
+		}
+	}
+
+	/**
+	 * Create a Review note linked to a book note (idempotent by basename).
+	 * Only called when the book status is 'reading' or 'read'.
+	 *
+	 * Reads the book note's frontmatter to extract the title, then creates
+	 * a minimal Review note in the reviews folder. If the review already
+	 * exists (by basename), silently skips creation.
+	 */
+	private async createReviewNote(bookFile: TFile): Promise<void> {
+		const kind = this.settings.defaultFrontmatterKeyType;
+		const cache = this.app.metadataCache.getFileCache(bookFile);
+		const fm = cache?.frontmatter ?? {};
+		const title: string =
+			typeof fm.title === 'string' ? fm.title : bookFile.basename;
+		const reviewBasename = `Review - ${title}`;
+		const reviewFolder = normalizePath(
+			this.settings.notesFolder.replace(/\/[^/]*$/, '/Reviews'),
+		);
+
+		// Check if review already exists
+		const reviewPath = normalizePath(`${reviewFolder}/${reviewBasename}.md`);
+		if (await this.app.vault.adapter.exists(reviewPath)) {
+			return; // Idempotent — review already exists
+		}
+
+		// Create reviews folder if needed
+		if (!(await this.app.vault.adapter.exists(reviewFolder))) {
+			await this.app.vault.createFolder(reviewFolder);
+		}
+
+		// Create minimal review note with link back to book
+		const created = formatCreated(new Date());
+		const bookLink = `[[${bookFile.basename}]]`;
+		const reviewContent = [
+			'---',
+			`${keyOf('type', kind)}: content`,
+			`${keyOf('tags', kind)}:`,
+			'  - review',
+			`${keyOf('created', kind)}: ${created}`,
+			`${keyOf('related_mocs', kind)}:`,
+			'---',
+			'',
+			`# Review: ${title}`,
+			'',
+			`Book: ${bookLink}`,
+			'',
+			'## My Thoughts',
+			'- ',
+			'',
+		].join('\n');
+
+		await this.app.vault.create(reviewPath, reviewContent);
 	}
 
 	/**

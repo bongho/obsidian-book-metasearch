@@ -4,6 +4,8 @@ import {
 	appendPriceWatchRows,
 	deriveStatusUpdates,
 	replaceAutoBlock,
+	shouldCreateReviewNote,
+	READING_STATUS,
 } from './note-writer';
 
 const identity = (k: string) => k;
@@ -118,19 +120,19 @@ describe('appendPriceWatchRows', () => {
 
 describe('deriveStatusUpdates', () => {
 	it('wishlist target only sets status', () => {
-		const out = deriveStatusUpdates({}, 'wishlist', TODAY, identity);
+		const out = deriveStatusUpdates({}, READING_STATUS.WISHLIST, TODAY, identity);
 		expect(out).toEqual({ status: 'wishlist' });
 	});
 
 	it('reading target stamps startedAt when missing', () => {
-		const out = deriveStatusUpdates({}, 'reading', TODAY, identity);
+		const out = deriveStatusUpdates({}, READING_STATUS.READING, TODAY, identity);
 		expect(out).toEqual({ status: 'reading', startedAt: TODAY });
 	});
 
 	it('reading target preserves existing startedAt (idempotent)', () => {
 		const out = deriveStatusUpdates(
 			{ startedAt: '2025-01-01' },
-			'reading',
+			READING_STATUS.READING,
 			TODAY,
 			identity,
 		);
@@ -138,7 +140,7 @@ describe('deriveStatusUpdates', () => {
 	});
 
 	it('read target stamps finishedAt AND startedAt if both are missing', () => {
-		const out = deriveStatusUpdates({}, 'read', TODAY, identity);
+		const out = deriveStatusUpdates({}, READING_STATUS.READ, TODAY, identity);
 		expect(out).toEqual({
 			status: 'read',
 			startedAt: TODAY,
@@ -149,7 +151,7 @@ describe('deriveStatusUpdates', () => {
 	it('read target only adds finishedAt when startedAt already exists', () => {
 		const out = deriveStatusUpdates(
 			{ startedAt: '2025-01-01' },
-			'read',
+			READING_STATUS.READ,
 			TODAY,
 			identity,
 		);
@@ -163,11 +165,25 @@ describe('deriveStatusUpdates', () => {
 				startedAt: 'started_at',
 				finishedAt: 'finished_at',
 			})[k] ?? k;
-		const out = deriveStatusUpdates({}, 'read', TODAY, rename);
+		const out = deriveStatusUpdates({}, READING_STATUS.READ, TODAY, rename);
 		expect(out).toEqual({
 			status: 'read',
 			started_at: TODAY,
 			finished_at: TODAY,
 		});
+	});
+});
+
+describe('shouldCreateReviewNote', () => {
+	it('returns true for reading status', () => {
+		expect(shouldCreateReviewNote(READING_STATUS.READING)).toBe(true);
+	});
+
+	it('returns true for read status', () => {
+		expect(shouldCreateReviewNote(READING_STATUS.READ)).toBe(true);
+	});
+
+	it('returns false for wishlist status', () => {
+		expect(shouldCreateReviewNote(READING_STATUS.WISHLIST)).toBe(false);
 	});
 });
