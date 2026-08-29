@@ -18,7 +18,7 @@ import { MigrationModal } from './ui/migration-modal';
 import { BookSearchModal } from './ui/search-modal';
 import { BookMetasearchSettingTab } from './ui/settings-tab';
 import { formatCitation } from './util/citation';
-import { appendPriceWatchRows, NoteWriter } from './writer/note-writer';
+import { appendPriceWatchRows, NoteWriter, READING_STATUS } from './writer/note-writer';
 import { DuplicateBookError, VaultBookIndex } from './writer/vault-index';
 
 /**
@@ -117,9 +117,9 @@ export default class BookMetasearchPlugin extends Plugin {
 		});
 
 		for (const [id, label, status] of [
-			['mark-as-wishlist', 'Mark book as wishlist', 'wishlist'],
-			['mark-as-reading', 'Mark book as reading', 'reading'],
-			['mark-as-read', 'Mark book as read', 'read'],
+			['mark-as-wishlist', 'Mark book as wishlist', READING_STATUS.WISHLIST],
+			['mark-as-reading', 'Mark book as reading', READING_STATUS.READING],
+			['mark-as-read', 'Mark book as read', READING_STATUS.READ],
 		] as const) {
 			this.addCommand({
 				id,
