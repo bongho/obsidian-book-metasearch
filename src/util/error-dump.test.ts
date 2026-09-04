@@ -4,6 +4,7 @@ import { redactSecrets } from './error-dump';
 import type { BookMetasearchSettings } from '../settings';
 
 const baseSettings: BookMetasearchSettings = {
+	yes24ApiKey: 'yes24-api-key-13579',
 	aladinTtbKey: 'ttbXYZabcdef1234',
 	kakaoRestApiKey: 'kakao-rest-key-98765',
 	googleBooksApiKey: 'AIzaSYSTEMBookLongKey',
@@ -39,8 +40,10 @@ const baseSettings: BookMetasearchSettings = {
 
 describe('redactSecrets', () => {
 	it('masks known secret fields by name convention (*Key/*Token/*Secret/*Password)', () => {
-		const text = 'TTB=ttbXYZabcdef1234 KAKAO=kakao-rest-key-98765';
+		const text =
+			'YES24=yes24-api-key-13579 TTB=ttbXYZabcdef1234 KAKAO=kakao-rest-key-98765';
 		const out = redactSecrets(text, baseSettings);
+		expect(out).not.toContain('yes24-api-key-13579');
 		expect(out).not.toContain('ttbXYZabcdef1234');
 		expect(out).not.toContain('kakao-rest-key-98765');
 		expect(out).toContain('***REDACTED***');

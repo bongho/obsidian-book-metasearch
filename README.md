@@ -1,6 +1,6 @@
 # Book Metasearch
 
-Book note maker with metasearch across **Aladin · Kakao · Google Books · Open Library**, queried in parallel. Korean-first with foreign fallback.
+Book note maker with metasearch across **YES24 · Kakao · Google Books · Open Library**, queried in parallel. Korean-first with foreign fallback.
 
 Successor to [anpigon/obsidian-book-search-plugin](https://github.com/anpigon/obsidian-book-search-plugin) (unmaintained). Built to solve the Naver Book Search API EOL (2026-08-01) and provide a proper Korean-first book note workflow.
 
@@ -16,7 +16,7 @@ From the community plugin directory:
 ## Features
 
 ### Core (v1.0)
-- **4-provider metasearch**: Aladin (Korean primary) · Kakao (Korean recall) · Google Books (foreign primary) · Open Library (foreign covers/ISBN)
+- **4-provider metasearch**: YES24 (Korean primary) · Kakao (Korean recall) · Google Books (foreign primary) · Open Library (foreign covers/ISBN)
 - **Two strategies**: Sequential fallback (default) or parallel Fanout with ISBN13 dedupe
 - **Commands**: Search books · Search by ISBN · Search based on current note · Update book info · Migration helper
 - **Template file** support with `{{variable}}` substitution — Templater `<% %>` blocks are preserved for post-creation execution
@@ -39,16 +39,25 @@ See [`CHANGELOG.md`](CHANGELOG.md) for the full v1.1.0 changelog.
 
 ## Provider setup
 
-Only Aladin and Kakao require API keys (both free, instant issuance). Google Books works without a key at a lower rate limit. Open Library needs no auth.
+Only YES24 and Kakao require API keys (both free, instant issuance). Google Books works without a key at a lower rate limit. Open Library needs no auth.
 
 | Provider | Auth | Free tier | Where to get a key |
 |----------|------|-----------|--------------------|
-| Aladin | TTB Key (required) | 5,000/day | [aladin.co.kr/ttb](https://www.aladin.co.kr/ttb/wblog_manage.aspx) |
+| YES24 | API Key (required) | 20,000/day | [developers.yes24.com](https://developers.yes24.com/docs/apikey) |
 | Kakao | REST API Key (required) | 30,000/day | [developers.kakao.com](https://developers.kakao.com/) |
 | Google Books | API Key (optional) | 1,000/day with key, low limit without | [Google Cloud Console](https://console.cloud.google.com/apis/credentials) — enable Books API first |
 | Open Library | No auth | Effectively unlimited | — |
+| ~~Aladin~~ | TTB Key | ~~5,000/day~~ | **API shut down 2026-10-30** — see below |
 
 After installing, open **Settings → Book Metasearch → Providers**, paste keys, and hit **Healthcheck** on each provider.
+
+## Aladin OpenAPI shutdown
+
+Aladin [announced](https://blog.aladin.co.kr/cscenter/17483675) the end of its Open API: **new key issuance stopped 2026-09-04, and existing keys stop working 2026-10-30.** YES24 is now the Korean primary provider, and it covers everything Aladin supplied plus a table of contents and physical dimensions.
+
+If you already hold a working TTB Key, the Aladin provider keeps functioning until the shutdown date — it is simply no longer first in `priorityOrder`. Move `yes24` into your provider order and add a YES24 key when convenient; the Aladin code is removed in v2.0.0, after the shutdown.
+
+The one feature with no replacement is the **used-book price check** — no Korean bookstore exposes used listings through an API, and all three block the corresponding pages in `robots.txt`. It goes away with the Aladin provider.
 
 ## Attribution
 
