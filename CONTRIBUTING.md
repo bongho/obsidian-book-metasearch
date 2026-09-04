@@ -56,7 +56,26 @@ tested directly; anything that needs Obsidian APIs (`App`, `Vault`,
 `SuggestModal`, `requestUrl`) is stubbed via `src/__mocks__/obsidian.ts` —
 grow the stub as new call sites appear.
 
+A test that calls a **real** endpoint instead of the stub needs
+`// @vitest-environment node` at the top of the file. `vitest.config.ts` sets
+`environment: 'happy-dom'` globally, and happy-dom enforces CORS, so the request
+fails with `Cross-Origin Request Blocked` before it ever leaves the process —
+even though the identical fetch works fine under plain Node. The failure names
+CORS, not the API, which makes it easy to misread as a broken endpoint.
+
 ## Known constraints
+
+**The Aladin provider is scheduled for removal, not broken.** Aladin stopped
+issuing new API keys on 2026-09-04 and shuts the API down entirely on
+2026-10-30. It stays *registered* — still working for anyone holding a valid TTB
+Key — but was dropped from the default `priorityOrder` in favour of YES24. The
+rationale lives next to the setting it governs, in `src/settings.ts` (see the
+comment on `aladinTtbKey`); this entry exists so the deadline is discoverable
+without reading the source. Don't re-promote Aladin to the default order, and
+don't delete `src/apis/aladin.ts` before the shutdown date — removal is v2.0.0.
+The used-book price check goes with it and has no replacement: no Korean
+bookstore exposes used listings through an API, and all three disallow the
+equivalent pages in `robots.txt`.
 
 **`@eslint/js` stays on 9.x while `eslint` itself is on 10.x.** This looks like
 an oversight in `package.json` but isn't: `eslint-plugin-obsidianmd@0.4.1`
@@ -124,7 +143,12 @@ local-push workaround — run `gh auth refresh -s workflow` first.
 5. Reuse pure utilities in `src/util/` (`isbn.ts`, `html.ts`,
    `language.ts`) rather than reimplementing.
 6. Add a Vitest file covering the response-normalization path with a fixture
-   payload.
+   payload. Capture the fixture from a real response rather than hand-writing
+   it — field *population* differs from field *documentation*, and a list
+   endpoint often omits what its detail endpoint returns. If you also write a
+   throwaway probe against the live API, remember
+   `// @vitest-environment node` (see Test / lint / build above) and don't
+   commit it.
 
 ## Release process
 
