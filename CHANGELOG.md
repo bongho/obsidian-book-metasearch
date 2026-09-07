@@ -27,6 +27,13 @@ Development-toolchain only — none of this reaches the bundled `main.js`.
   and this plugin is already listed; Obsidian reads the repo's `manifest.json`
   for the latest version and fetches files from the matching GitHub release. The
   old wording implied a per-release submission that does not exist.
+- Dropped Node 20 from the CI matrix, leaving `build (22.x)` and `build (24.x)`
+  as the required checks, and declared `engines.node >= 22.12.0`. vitest 5
+  requires `^22.12.0 || ^24.0.0 || >=26.0.0`, so `npm ci` on `20.x` aborts with
+  `EBADENGINE` under `engine-strict=true`. The branch-protection contexts were
+  updated before this change landed — dropping `20.x` from the matrix while
+  `build (20.x)` was still required would leave that check permanently
+  unreported, and `enforce_admins` allows no admin bypass to merge past it.
 
 ## [1.2.4] - 2026-08-23
 
