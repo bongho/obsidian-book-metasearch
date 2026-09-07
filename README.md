@@ -58,7 +58,7 @@ The Aladin OpenAPI general-tier terms don't strictly mandate a credit link, but 
 
 ## Development
 
-Prerequisites: Node 20+, npm.
+Prerequisites: Node 22.12+, npm.
 
 ```bash
 git clone https://github.com/bongho/obsidian-book-metasearch.git

@@ -33,8 +33,8 @@ npm run build      # tsc --noEmit + esbuild production bundle
 npm run verify     # all three at once — the pre-merge check
 ```
 
-CI (`.github/workflows/lint.yml`) runs `build → lint → test` on Node 20 / 22 /
-24. Failing tests and lint errors block merge.
+CI (`.github/workflows/lint.yml`) runs `build → lint → test` on Node 22 / 24.
+Failing tests and lint errors block merge.
 
 Lint should sit at **0 errors and 2 warnings**. Both warnings are deliberate
 and documented where they occur — a deprecated `setWarning()` call that can't
@@ -80,17 +80,20 @@ the installer. Run installs with a newer npm, e.g.
 The binding is architecture-native rather than Node-version-specific, so once it
 is installed the default `node`/`npm` on the machine runs `npm test`,
 `npm run verify`, and `npm run test:coverage` normally. CI is unaffected —
-`actions/setup-node` ships a current npm on all three matrix versions.
+`actions/setup-node` ships a current npm on both matrix versions.
 
 `package.json` declares `engines.npm >= 10.8.2` and `.npmrc` sets
 `engine-strict=true`, so an npm below the floor now aborts the install with
 `EBADENGINE` instead of quietly producing a tree whose tests cannot run.
 
-The floor is 10.8.2 rather than 10.9 because that is what the evidence
-supports, and because the floor has to stay under CI: `actions/setup-node`
-resolves `20.x` to Node 20.20.2, which bundles **npm 10.8.2** — one patch above
-the broken version — while `22.x` gets 10.9.8 and `24.x` gets 11.17.0. A 10.9
-floor would fail the required `build (20.x)` check. Versions observed installing
+The floor stays at 10.8.2 because that is what the evidence supports — a floor
+is the lowest version observed working, not the newest available. It was also
+forced by CI while the matrix carried `20.x`: `actions/setup-node` resolved
+`20.x` to Node 20.20.2, which bundles **npm 10.8.2** — one patch above the
+broken version — so a 10.9 floor would have failed the then-required
+`build (20.x)` check. That constraint is gone now that `20.x` is dropped (`22.x`
+gets 10.9.8, `24.x` gets 11.17.0), but raising the floor still needs an observed
+failure to justify it. Versions observed installing
 the binding correctly: 10.8.2 (linux-x64, CI), 10.9.4 (darwin-arm64, local),
 11.17.0 (linux-x64, CI). Only 10.8.1 has been observed failing.
 
