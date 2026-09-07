@@ -6,6 +6,7 @@ import { GoogleBooksProvider } from './apis/google-books';
 import { KakaoProvider } from './apis/kakao';
 import { OpenLibraryProvider } from './apis/openlibrary';
 import { ProviderRegistry } from './apis/registry';
+import { Yes24Provider } from './apis/yes24';
 import {
 	detectAnpigon,
 	shouldShowMigrationBanner,
@@ -32,6 +33,7 @@ import { DuplicateBookError, VaultBookIndex } from './writer/vault-index';
 export default class BookMetasearchPlugin extends Plugin {
 	settings!: BookMetasearchSettings;
 	registry!: ProviderRegistry;
+	yes24!: Yes24Provider;
 	aladin!: AladinProvider;
 	kakao!: KakaoProvider;
 	google!: GoogleBooksProvider;
@@ -43,10 +45,14 @@ export default class BookMetasearchPlugin extends Plugin {
 		await this.loadSettings();
 
 		this.registry = new ProviderRegistry();
+		this.yes24 = new Yes24Provider(() => this.settings.yes24ApiKey);
 		this.aladin = new AladinProvider(() => this.settings.aladinTtbKey);
 		this.kakao = new KakaoProvider(() => this.settings.kakaoRestApiKey);
 		this.google = new GoogleBooksProvider(() => this.settings.googleBooksApiKey);
 		this.openLibrary = new OpenLibraryProvider();
+		// Registration order is the fallback order for providers absent from
+		// `priorityOrder`; YES24 leads now that Aladin is winding down.
+		this.registry.register(this.yes24);
 		this.registry.register(this.aladin);
 		this.registry.register(this.kakao);
 		this.registry.register(this.google);
@@ -149,7 +155,8 @@ export default class BookMetasearchPlugin extends Plugin {
 	 * just create the note and open it. Callers pass an optional Notice
 	 * prefix so ISBN-search and full-search paths surface distinct messages.
 	 */
-	private async createOrHandleDuplicate(book: Book): Promise<void> {
+	private async createOrHandleDuplicate(rawBook: Book): Promise<void> {
+		const book = await this.enrich(rawBook);
 		try {
 			const file = await this.writer.create(book);
 			if (this.settings.openNoteAfterCreate) {
@@ -162,6 +169,21 @@ export default class BookMetasearchPlugin extends Plugin {
 				return;
 			}
 			throw e;
+		}
+	}
+
+	/**
+	 * Give the originating provider one chance to top up the book with fields
+	 * its search endpoint omits (YES24 `subTitle` / `pages`). Search results
+	 * stay cheap; the extra request happens only for the book actually chosen.
+	 */
+	private async enrich(book: Book): Promise<Book> {
+		const provider = this.registry.get(book.provider);
+		if (!provider?.enrich) return book;
+		try {
+			return await provider.enrich(book);
+		} catch {
+			return book;
 		}
 	}
 

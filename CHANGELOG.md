@@ -7,9 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **YES24 provider** (`yes24`) — Korean primary, replacing Aladin ahead of its
+  API shutdown. Search via `goods/itemList`, ISBN lookup and detail via
+  `goods/itemDetail?detail=Y`, `X-API-KEY` header auth, 20,000 requests/day on
+  the free key tier. Settings card with a masked key input and a healthcheck
+  button, same as the other providers.
+- Optional `BookProvider.enrich()` hook. YES24's search endpoint omits
+  `subTitle` and `pages`, so those are fetched once for the book the user
+  actually picks rather than once per search hit. Enrichment failures fall
+  back to the unenriched book — a note is never blocked on it.
+- YES24 author-string parser (`src/util/yes24-author-parser.ts`). YES24 sends
+  slash-separated role groups (`유발 하라리 저/조현욱 역/이태수 감수`) where Aladin
+  parenthesizes roles, so the grammars share no tokens and this is a separate
+  parser rather than a rework of the Aladin one — which leaves with the Aladin
+  provider anyway. Role vocabulary was drawn from ~260 author strings sampled
+  across 10 category queries.
+
 ### Changed
 
-Development-toolchain only — none of this reaches the bundled `main.js`.
+- Korean primary provider is now YES24: `priorityOrder` defaults to
+  `['yes24', 'kakao', 'google', 'openlibrary']`. Aladin stays registered and
+  keeps working for anyone holding a valid TTB Key until 2026-10-30, but is no
+  longer queried first. Measured against a 12-ISBN sample, YES24 resolved 12/12
+  lookups with `pages` on 11 (the miss is a foreign-language title) and
+  `goodsSortNm` on 12 — recovering the `subtitle`, `category`, and `total`
+  frontmatter fields that Aladin's shutdown would otherwise have emptied.
+- The Aladin settings card now carries the shutdown dates, and the README
+  documents the migration plus the one feature with no replacement (used-book
+  price check — no Korean bookstore exposes used listings via API, and all
+  three disallow the corresponding pages in `robots.txt`).
+
+Development-toolchain only from here — none of the rest reaches the bundled
+`main.js`.
 
 - `vitest` and `@vitest/coverage-v8` 3.2.7 -> 4.1.11, as one grouped bump now
   that the group actually pairs them. 55 tests pass on Node 20 / 22 / 24. (#24)

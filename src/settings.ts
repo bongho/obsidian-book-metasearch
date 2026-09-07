@@ -1,9 +1,9 @@
 /**
  * Plugin settings — persisted via `Plugin.saveData()` to `data.json`.
  *
- * ⚠️ `data.json` contains user secrets (Aladin TTB Key etc.) and is gitignored
- * in the plugin repo. When a user files a bug report, redact `aladinTtbKey`
- * before sharing.
+ * ⚠️ `data.json` contains user secrets (YES24 / Aladin API keys etc.) and is
+ * gitignored in the plugin repo. When a user files a bug report, redact
+ * `yes24ApiKey` and `aladinTtbKey` before sharing.
  */
 
 export type FrontmatterKeyCase =
@@ -14,6 +14,9 @@ export type FrontmatterKeyCase =
 
 export interface BookMetasearchSettings {
 	// ── Provider auth ──
+	yes24ApiKey: string;
+	// Aladin's Open API shuts down 2026-10-30 (new keys stopped 2026-09-04).
+	// Kept working for users whose key is still valid; removed in v2.0.0.
 	aladinTtbKey: string;
 	kakaoRestApiKey: string;
 	googleBooksApiKey: string; // optional — improves rate limit
@@ -132,10 +135,11 @@ export interface BookMetasearchSettings {
 }
 
 export const DEFAULT_SETTINGS: BookMetasearchSettings = {
+	yes24ApiKey: '',
 	aladinTtbKey: '',
 	kakaoRestApiKey: '',
 	googleBooksApiKey: '',
-	priorityOrder: ['aladin', 'kakao', 'google', 'openlibrary'],
+	priorityOrder: ['yes24', 'kakao', 'google', 'openlibrary'],
 	searchStrategy: 'sequential',
 	notesFolder: '85. References (Book Search)',
 	coverFolder: '80. References/Assets/Images',
