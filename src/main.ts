@@ -11,7 +11,11 @@ import {
 	detectAnpigon,
 	shouldShowMigrationBanner,
 } from './migration/naver-detector';
-import { BookMetasearchSettings, DEFAULT_SETTINGS } from './settings';
+import {
+	BookMetasearchSettings,
+	DEFAULT_SETTINGS,
+	migratePriorityOrder,
+} from './settings';
 import { DuplicateModal } from './ui/duplicate-modal';
 import type { DuplicateAction } from './ui/duplicate-modal';
 import { IsbnInputModal } from './ui/isbn-input-modal';
@@ -260,6 +264,11 @@ export default class BookMetasearchPlugin extends Plugin {
 	async loadSettings(): Promise<void> {
 		const loaded = (await this.loadData()) as Partial<BookMetasearchSettings> | null;
 		this.settings = { ...DEFAULT_SETTINGS, ...(loaded ?? {}) };
+		const migrated = migratePriorityOrder(this.settings.priorityOrder);
+		if (migrated !== this.settings.priorityOrder) {
+			this.settings.priorityOrder = migrated;
+			await this.saveSettings();
+		}
 	}
 
 	async saveSettings(): Promise<void> {

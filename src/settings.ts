@@ -168,3 +168,23 @@ export const DEFAULT_SETTINGS: BookMetasearchSettings = {
 	priceCheckEnabled: false,
 	priceOutputMode: 'notice-only',
 };
+
+/**
+ * Installs predating the YES24 provider carry a saved `priorityOrder` that
+ * names every provider except `yes24` — and a saved value wins over
+ * `DEFAULT_SETTINGS` in the shallow merge `loadSettings()` performs. Left
+ * alone, `ProviderRegistry.resolveOrdered()` appends the unlisted provider
+ * last, so the new Korean primary would sit behind Open Library and, under
+ * the default `sequential` strategy, never be reached.
+ *
+ * Inserted directly ahead of `aladin` so the rest of the user's own ordering
+ * survives. Returns the input array unchanged when nothing needs migrating,
+ * so callers can skip a redundant `saveData()` on identity.
+ */
+export function migratePriorityOrder(order: string[]): string[] {
+	if (order.includes('yes24')) return order;
+	const aladinAt = order.indexOf('aladin');
+	const migrated = [...order];
+	migrated.splice(aladinAt < 0 ? 0 : aladinAt, 0, 'yes24');
+	return migrated;
+}

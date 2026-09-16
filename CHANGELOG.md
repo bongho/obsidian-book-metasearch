@@ -34,6 +34,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   lookups with `pages` on 11 (the miss is a foreign-language title) and
   `goodsSortNm` on 12 — recovering the `subtitle`, `category`, and `total`
   frontmatter fields that Aladin's shutdown would otherwise have emptied.
+  An existing `data.json` overrides that default, so on first load a saved
+  `priorityOrder` without `yes24` gets it spliced in ahead of `aladin` and is
+  written back once. Without the migration the registry appends the unlisted
+  provider last, and under the default `sequential` strategy the new primary
+  would never have been reached on an upgrade.
 - The Aladin settings card now carries the shutdown dates, and the README
   documents the migration plus the one feature with no replacement (used-book
   price check — no Korean bookstore exposes used listings via API, and all
