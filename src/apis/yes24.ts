@@ -140,7 +140,7 @@ export class Yes24Provider implements BookProvider {
 		try {
 			const item = await this.lookupDetail(searchType, query);
 			if (!item) return book;
-			return { ...book, ...normalizeYes24Item(item, this.id) };
+			return mergeEnriched(book, item, this.id);
 		} catch {
 			return book;
 		}
@@ -267,6 +267,28 @@ export function detailKeyFor(book: Book): ['ISBN13' | 'ItemId', string | null] {
 	if (isRealIsbn13(book.isbn13)) return ['ISBN13', book.isbn13];
 	const itemId = /\/goods\/(\d+)/.exec(book.providerUrl ?? '')?.[1];
 	return ['ItemId', itemId ?? null];
+}
+
+/**
+ * Overlay a detail payload on a search result, skipping the keys the detail
+ * response left empty.
+ *
+ * `normalizeYes24Item` always emits every key of `Book`, filling in
+ * `undefined` where the payload had nothing — so a plain spread would blank
+ * whatever the leaner search result had already supplied. Detail is expected
+ * to be a superset of search, but nothing in the API guarantees it, and the
+ * cost of not relying on that is one loop.
+ */
+export function mergeEnriched(
+	book: Book,
+	item: Yes24Item,
+	providerId: string,
+): Book {
+	const detail = normalizeYes24Item(item, providerId);
+	const overlay = Object.fromEntries(
+		Object.entries(detail).filter(([, value]) => value !== undefined),
+	) as Partial<Book>;
+	return { ...book, ...overlay };
 }
 
 export function normalizeYes24Item(item: Yes24Item, providerId: string): Book {

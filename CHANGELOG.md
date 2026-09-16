@@ -17,7 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optional `BookProvider.enrich()` hook. YES24's search endpoint omits
   `subTitle` and `pages`, so those are fetched once for the book the user
   actually picks rather than once per search hit. Enrichment failures fall
-  back to the unenriched book — a note is never blocked on it.
+  back to the unenriched book — a note is never blocked on it. The overlay
+  skips keys the detail response left empty, so a field the search result had
+  already supplied is never blanked by the top-up.
 - YES24 author-string parser (`src/util/yes24-author-parser.ts`). YES24 sends
   slash-separated role groups (`유발 하라리 저/조현욱 역/이태수 감수`) where Aladin
   parenthesizes roles, so the grammars share no tokens and this is a separate

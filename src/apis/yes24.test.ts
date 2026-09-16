@@ -4,6 +4,7 @@ import {
 	detailKeyFor,
 	formatPublishDate,
 	isEmptyResult,
+	mergeEnriched,
 	normalizeYes24Item,
 	parseGoodsSort,
 	type Yes24Item,
@@ -171,5 +172,36 @@ describe('detailKeyFor', () => {
 
 	it('yields a null query when neither is available', () => {
 		expect(detailKeyFor(base)).toEqual(['ItemId', null]);
+	});
+});
+
+describe('mergeEnriched', () => {
+	/** What `goods/itemList` hands back: no subTitle, no pages. */
+	const leanHit = normalizeYes24Item(
+		{
+			title: '사피엔스',
+			author: '유발 하라리 저/조현욱 역',
+			goodsSortNm: '국내도서-인문',
+			publisher: '김영사',
+			isbn13: '9788934972464',
+			publishDate: '20151123',
+			cover: 'https://image.yes24.com/goods/23030284/L',
+			link: 'https://www.yes24.com/product/goods/23030284',
+		},
+		'yes24',
+	);
+
+	it('fills in the detail-only fields the search result lacked', () => {
+		const merged = mergeEnriched(leanHit, SAPIENS, 'yes24');
+		expect(merged.pageCount).toBe(636);
+		expect(merged.subtitle).toBe(
+			'유인원에서 사이보그까지, 인간 역사의 대담하고 위대한 질문',
+		);
+	});
+
+	it('keeps a search-result field the detail payload left empty', () => {
+		const coverless: Yes24Item = { ...SAPIENS, cover: undefined };
+		const merged = mergeEnriched(leanHit, coverless, 'yes24');
+		expect(merged.coverUrl).toBe('https://image.yes24.com/goods/23030284/L');
 	});
 });
