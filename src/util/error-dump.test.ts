@@ -28,6 +28,7 @@ const baseSettings: BookMetasearchSettings = {
 	errorDumpFolder: '',
 	migrationCompletedAt: '',
 	migrationBannerDismissedAt: '',
+	yes24PriorityMigratedAt: '',
 	autoFillDescription: true,
 	duplicateAction: 'ask',
 	readingStatusEnabled: true,

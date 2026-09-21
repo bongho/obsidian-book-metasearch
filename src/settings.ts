@@ -87,6 +87,10 @@ export interface BookMetasearchSettings {
 	// config" banner after the user has acknowledged it.
 	migrationCompletedAt: string;
 	migrationBannerDismissedAt: string;
+	// ISO timestamp of the one-time `priorityOrder` splice that introduced
+	// `yes24`. Its presence is what stops the splice from repeating, so a user
+	// who deliberately drops yes24 from the order keeps it dropped.
+	yes24PriorityMigratedAt: string;
 
 	// ── Note body auto-fill (M0-D) ──
 	// When true, `renderSkeleton` fills the `## Abstract / Description` AUTO
@@ -159,6 +163,7 @@ export const DEFAULT_SETTINGS: BookMetasearchSettings = {
 	errorDumpFolder: '85. References (Book Search)/_errors',
 	migrationCompletedAt: '',
 	migrationBannerDismissedAt: '',
+	yes24PriorityMigratedAt: '',
 	autoFillDescription: true,
 	duplicateAction: 'ask',
 	readingStatusEnabled: true,
@@ -178,10 +183,17 @@ export const DEFAULT_SETTINGS: BookMetasearchSettings = {
  * the default `sequential` strategy, never be reached.
  *
  * Inserted directly ahead of `aladin` so the rest of the user's own ordering
- * survives. Returns the input array unchanged when nothing needs migrating,
- * so callers can skip a redundant `saveData()` on identity.
+ * survives. Returns the input array unchanged when nothing needs migrating.
+ *
+ * Runs exactly once, gated on `migratedAt`. `priorityOrder` is a free-text
+ * field in the settings tab, so without the stamp a user who removes `yes24`
+ * would have it spliced back in on the next load and could never drop it.
  */
-export function migratePriorityOrder(order: string[]): string[] {
+export function migratePriorityOrder(
+	order: string[],
+	migratedAt: string,
+): string[] {
+	if (migratedAt) return order;
 	if (order.includes('yes24')) return order;
 	const aladinAt = order.indexOf('aladin');
 	const migrated = [...order];

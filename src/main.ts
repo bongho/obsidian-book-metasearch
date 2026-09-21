@@ -264,9 +264,12 @@ export default class BookMetasearchPlugin extends Plugin {
 	async loadSettings(): Promise<void> {
 		const loaded = (await this.loadData()) as Partial<BookMetasearchSettings> | null;
 		this.settings = { ...DEFAULT_SETTINGS, ...(loaded ?? {}) };
-		const migrated = migratePriorityOrder(this.settings.priorityOrder);
-		if (migrated !== this.settings.priorityOrder) {
-			this.settings.priorityOrder = migrated;
+		if (!this.settings.yes24PriorityMigratedAt) {
+			this.settings.priorityOrder = migratePriorityOrder(
+				this.settings.priorityOrder,
+				this.settings.yes24PriorityMigratedAt,
+			);
+			this.settings.yes24PriorityMigratedAt = new Date().toISOString();
 			await this.saveSettings();
 		}
 	}
