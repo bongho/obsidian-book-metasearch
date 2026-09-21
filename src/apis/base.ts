@@ -139,6 +139,17 @@ export interface BookProvider {
 	 * to `Book.coverUrl` for reference-only storage.
 	 */
 	fetchCover?(isbn: string): Promise<ArrayBuffer | null>;
+
+	/**
+	 * Optional: fill in fields the provider's *search* endpoint omits but its
+	 * *detail* endpoint carries (YES24 `subTitle`/`pages`, for instance). Called
+	 * once, just before a note is written — enriching every search hit would
+	 * cost one request per result the user never picks.
+	 *
+	 * Must resolve to the input book on failure: enrichment improves a note,
+	 * it is never a precondition for creating one.
+	 */
+	enrich?(book: Book): Promise<Book>;
 }
 
 /**

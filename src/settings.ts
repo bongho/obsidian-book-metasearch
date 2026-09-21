@@ -1,9 +1,9 @@
 /**
  * Plugin settings — persisted via `Plugin.saveData()` to `data.json`.
  *
- * ⚠️ `data.json` contains user secrets (Aladin TTB Key etc.) and is gitignored
- * in the plugin repo. When a user files a bug report, redact `aladinTtbKey`
- * before sharing.
+ * ⚠️ `data.json` contains user secrets (YES24 / Aladin API keys etc.) and is
+ * gitignored in the plugin repo. When a user files a bug report, redact
+ * `yes24ApiKey` and `aladinTtbKey` before sharing.
  */
 
 export type FrontmatterKeyCase =
@@ -14,6 +14,9 @@ export type FrontmatterKeyCase =
 
 export interface BookMetasearchSettings {
 	// ── Provider auth ──
+	yes24ApiKey: string;
+	// Aladin's Open API shuts down 2026-10-30 (new keys stopped 2026-09-04).
+	// Kept working for users whose key is still valid; removed in v2.0.0.
 	aladinTtbKey: string;
 	kakaoRestApiKey: string;
 	googleBooksApiKey: string; // optional — improves rate limit
@@ -84,6 +87,10 @@ export interface BookMetasearchSettings {
 	// config" banner after the user has acknowledged it.
 	migrationCompletedAt: string;
 	migrationBannerDismissedAt: string;
+	// ISO timestamp of the one-time `priorityOrder` splice that introduced
+	// `yes24`. Its presence is what stops the splice from repeating, so a user
+	// who deliberately drops yes24 from the order keeps it dropped.
+	yes24PriorityMigratedAt: string;
 
 	// ── Note body auto-fill (M0-D) ──
 	// When true, `renderSkeleton` fills the `## Abstract / Description` AUTO
@@ -132,10 +139,11 @@ export interface BookMetasearchSettings {
 }
 
 export const DEFAULT_SETTINGS: BookMetasearchSettings = {
+	yes24ApiKey: '',
 	aladinTtbKey: '',
 	kakaoRestApiKey: '',
 	googleBooksApiKey: '',
-	priorityOrder: ['aladin', 'kakao', 'google', 'openlibrary'],
+	priorityOrder: ['yes24', 'kakao', 'google', 'openlibrary'],
 	searchStrategy: 'sequential',
 	notesFolder: '85. References (Book Search)',
 	coverFolder: '80. References/Assets/Images',
@@ -155,6 +163,7 @@ export const DEFAULT_SETTINGS: BookMetasearchSettings = {
 	errorDumpFolder: '85. References (Book Search)/_errors',
 	migrationCompletedAt: '',
 	migrationBannerDismissedAt: '',
+	yes24PriorityMigratedAt: '',
 	autoFillDescription: true,
 	duplicateAction: 'ask',
 	readingStatusEnabled: true,
@@ -164,3 +173,30 @@ export const DEFAULT_SETTINGS: BookMetasearchSettings = {
 	priceCheckEnabled: false,
 	priceOutputMode: 'notice-only',
 };
+
+/**
+ * Installs predating the YES24 provider carry a saved `priorityOrder` that
+ * names every provider except `yes24` — and a saved value wins over
+ * `DEFAULT_SETTINGS` in the shallow merge `loadSettings()` performs. Left
+ * alone, `ProviderRegistry.resolveOrdered()` appends the unlisted provider
+ * last, so the new Korean primary would sit behind Open Library and, under
+ * the default `sequential` strategy, never be reached.
+ *
+ * Inserted directly ahead of `aladin` so the rest of the user's own ordering
+ * survives. Returns the input array unchanged when nothing needs migrating.
+ *
+ * Runs exactly once, gated on `migratedAt`. `priorityOrder` is a free-text
+ * field in the settings tab, so without the stamp a user who removes `yes24`
+ * would have it spliced back in on the next load and could never drop it.
+ */
+export function migratePriorityOrder(
+	order: string[],
+	migratedAt: string,
+): string[] {
+	if (migratedAt) return order;
+	if (order.includes('yes24')) return order;
+	const aladinAt = order.indexOf('aladin');
+	const migrated = [...order];
+	migrated.splice(aladinAt < 0 ? 0 : aladinAt, 0, 'yes24');
+	return migrated;
+}

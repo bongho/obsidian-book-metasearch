@@ -45,6 +45,7 @@ export default defineConfig(
 					// so "Insert book citation at cursor" — a text cursor — gets flagged.
 					brands: [
 						'Naver',
+						'YES24',
 						'Aladin',
 						'Kakao',
 						'Google Books',
@@ -61,7 +62,7 @@ export default defineConfig(
 						'^AIza',
 						'^(camelCase|snake_case|kebab-case)$',
 						'^\\d+\\. References',
-						'^aladin, kakao',
+						'^yes24, kakao',
 					],
 				},
 			],

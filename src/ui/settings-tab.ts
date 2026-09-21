@@ -68,6 +68,7 @@ function attachRevealButton(
 }
 
 const TTB_ISSUE_URL = 'https://www.aladin.co.kr/ttb/wblog_manage.aspx';
+const YES24_ISSUE_URL = 'https://developers.yes24.com/docs/apikey';
 
 // ISO 639-1 codes supported across Google Books langRestrict, Kakao Daum,
 // Open Library. Alphabetical, Korean first (bongho's primary).
@@ -154,8 +155,63 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 		{
 			let inputRef!: TextComponent;
 			const setting = new Setting(containerEl)
+				.setName('YES24 API key')
+				.setDesc(
+					'YES24 Open API 키. 예스24 계정으로 로그인해 약관에 동의하면 즉시 발급됩니다. 기본키 한도는 하루 20,000회.',
+				)
+				.addText((text) => {
+					inputRef = text;
+					maskAsSecret(text);
+					text
+						.setPlaceholder('발급받은 API Key')
+						.setValue(this.plugin.settings.yes24ApiKey)
+						.onChange(async (value) => {
+							this.plugin.settings.yes24ApiKey = value.trim();
+							await this.plugin.saveSettings();
+						});
+				});
+			attachRevealButton(setting, inputRef);
+			setting.addButton((btn) =>
+				btn
+					.setButtonText('발급 페이지 열기')
+					.setTooltip(YES24_ISSUE_URL)
+					.onClick(() => {
+						window.open(YES24_ISSUE_URL);
+					}),
+			);
+		}
+
+		new Setting(containerEl)
+			.setName('YES24 연결 테스트')
+			.setDesc('입력한 API Key로 검색 API가 정상 응답하는지 확인.')
+			.addButton((btn) =>
+				btn.setButtonText('Healthcheck 실행').onClick(async () => {
+					btn.setDisabled(true).setButtonText('확인 중…');
+					try {
+						const status = await this.plugin.yes24.healthcheck();
+						if (status.ok) {
+							new Notice('✅ YES24 OK');
+						} else {
+							const msg = await reportHealthFailure(
+								this.plugin,
+								'YES24',
+								status,
+							);
+							new Notice(msg, 8000);
+						}
+					} finally {
+						btn.setDisabled(false).setButtonText('Healthcheck 실행');
+					}
+				}),
+			);
+
+		{
+			let inputRef!: TextComponent;
+			const setting = new Setting(containerEl)
 				.setName('Aladin TTB key')
-				.setDesc('알라딘 오픈 API 키. 발급 페이지에서 무료로 받을 수 있습니다.')
+				.setDesc(
+					'⚠️ 알라딘 오픈 API는 2026-10-30에 종료됩니다(신규 키 발급은 2026-09-04 마감). 기존 키는 종료일까지 동작하며, 검색 기본값은 YES24로 옮겨졌습니다.',
+				)
 				.addText((text) => {
 					inputRef = text;
 					maskAsSecret(text);
@@ -352,12 +408,12 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName('Provider 우선순위')
 			.setDesc(
-				'쉼표로 구분된 provider ID 순서 (aladin, kakao, google, openlibrary). ' +
+				'쉼표로 구분된 provider ID 순서 (yes24, kakao, google, openlibrary). ' +
 					'sequential 모드에서 순차 시도, fanout 모드에서 중복 제거 우선순위.',
 			)
 			.addText((text) =>
 				text
-					.setPlaceholder('aladin, kakao, google, openlibrary')
+					.setPlaceholder('yes24, kakao, google, openlibrary')
 					.setValue(this.plugin.settings.priorityOrder.join(', '))
 					.onChange(async (value) => {
 						this.plugin.settings.priorityOrder = value

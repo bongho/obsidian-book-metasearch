@@ -3,7 +3,7 @@
 	"name": "Book Metasearch",
 	"version": "1.2.4",
 	"minAppVersion": "1.4.4",
-	"description": "Book note maker with metasearch across Aladin, Kakao, Google Books, and Open Library. Korean-first with foreign fallback; fills the gap left by Naver Book API EOL 2026-08-01.",
+	"description": "Book note maker with metasearch across YES24, Kakao, Google Books, and Open Library. Korean-first with foreign fallback; covers the Naver (2026-08-01) and Aladin (2026-10-30) book API shutdowns.",
 	"author": "BongHo Lee",
 	"authorUrl": "https://github.com/bongho",
 	"isDesktopOnly": false
