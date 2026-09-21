@@ -39,3 +39,6 @@ data.json
 
 # upstream template git history (to delete after review)
 _upstream-git-to-delete/
+
+# Claude Code personal overrides
+.claude/settings.local.json
