@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **YES24 notes now carry the required source credit and product link.** The
+  footer that writes an attribution line was gated on `provider === 'aladin'`,
+  so every note built from YES24 — the Korean primary since the provider
+  landed — got none. YES24's Open API FAQ makes both the credit
+  (「도서 정보가 노출되는 화면에 예스24 출처 표기」) and a link to the product page
+  (「도서 상세 정보 또는 구매 관련 영역에서 예스24 상품 상세페이지로 연결」) a condition
+  of use, so unlike Aladin's this one is not behind `aladinCreditEnabled` —
+  a toggle would let a user switch off compliance without knowing it. Notes
+  already created are **not** rewritten; the fix applies to notes created from
+  here on.
+- Search results name the source by its brand rather than its slug — the meta
+  line already carried `book.provider`, but as the raw id (`yes24`). It now
+  resolves through the registry to the provider's own `displayName` (`YES24`,
+  `Kakao (다음 도서)`), which is the same requirement applied to the other
+  screen that shows book data.
+
 ### Added
 
 - **YES24 provider** (`yes24`) — Korean primary, replacing Aladin ahead of its

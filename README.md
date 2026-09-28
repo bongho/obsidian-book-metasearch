@@ -61,9 +61,14 @@ The one feature with no replacement is the **used-book price check** — no Kore
 
 ## Attribution
 
+- **YES24**: 도서 정보 제공: YES24, linked to the product page ([yes24.com](https://www.yes24.com))
 - **Aladin**: Book DB by Aladin ([aladin.co.kr](https://www.aladin.co.kr))
 
-The Aladin OpenAPI general-tier terms don't strictly mandate a credit link, but keeping the "Book DB by Aladin" footer in generated notes is the polite (and forward-compatible if you ever upgrade to the premium tier). Leave the credit toggle on unless you have a specific reason.
+**The YES24 credit is required, not optional, and has no toggle.** Its [Open API FAQ](https://developers.yes24.com/support/faq) makes two things a condition of use: 「도서 정보가 노출되는 화면에 예스24 출처 표기」 and 「도서 상세 정보 또는 구매 관련 영역에서 예스24 상품 상세페이지로 연결」. Notes built from YES24 data therefore carry a footer crediting YES24 and linking the product page. If you add a buy link for another retailer, the YES24 product link has to stay visible alongside it.
+
+The Aladin OpenAPI general-tier terms don't strictly mandate a credit link, but keeping the "Book DB by Aladin" footer in generated notes is the polite (and forward-compatible if you ever upgrade to the premium tier). Leave the credit toggle on unless you have a specific reason. That toggle governs Aladin only.
+
+Storing what you look up is fine — the same FAQ allows caching 「서비스 제공에 필요한 범위 내에서」, which is what a book note is. What it does not allow is harvesting the catalogue into a database of your own, or redistributing the data. Keep that in mind before scripting bulk imports.
 
 ## Development
 

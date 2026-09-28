@@ -67,6 +67,34 @@ export function deriveStatusUpdates(
 	return updates;
 }
 
+/**
+ * Source credit for the note footer, or null when none applies.
+ *
+ * YES24's is not optional and not behind a setting. Its Open API FAQ makes
+ * two things a condition of use: "도서 정보가 노출되는 화면에 예스24 출처 표기"
+ * and "도서 상세 정보 또는 구매 관련 영역에서 예스24 상품 상세페이지로 연결".
+ * A toggle would let a user switch off compliance without knowing it, so the
+ * only degradation here is dropping the link when the provider gave us no
+ * product URL — the credit itself still goes in.
+ *
+ * Aladin's general-tier terms only make the credit polite, which is why that
+ * one stays behind `aladinCreditEnabled`.
+ */
+export function creditLineFor(
+	book: Book,
+	aladinCreditEnabled: boolean,
+): string | null {
+	if (book.provider === 'yes24') {
+		return book.providerUrl
+			? `*도서 정보 제공: [YES24](${book.providerUrl})*`
+			: '*도서 정보 제공: YES24*';
+	}
+	if (book.provider === 'aladin' && aladinCreditEnabled && book.providerUrl) {
+		return `*Book DB by [Aladin](${book.providerUrl})*`;
+	}
+	return null;
+}
+
 export function replaceAutoBlock(
 	body: string,
 	newContent: string,
@@ -378,15 +406,12 @@ export class NoteWriter {
 		}
 		lines.push(AUTO_END);
 
-		if (
-			this.settings.aladinCreditEnabled &&
-			book.provider === 'aladin' &&
-			book.providerUrl
-		) {
+		const credit = creditLineFor(book, this.settings.aladinCreditEnabled);
+		if (credit) {
 			lines.push('');
 			lines.push('---');
 			lines.push('');
-			lines.push(`*Book DB by [Aladin](${book.providerUrl})*`);
+			lines.push(credit);
 		}
 
 		return lines.join('\n') + '\n';

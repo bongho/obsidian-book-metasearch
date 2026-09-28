@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import type { Book } from '../apis/base';
 import {
 	appendPriceWatchRows,
+	creditLineFor,
 	deriveStatusUpdates,
 	replaceAutoBlock,
 	shouldCreateReviewNote,
@@ -185,5 +187,39 @@ describe('shouldCreateReviewNote', () => {
 
 	it('returns false for wishlist status', () => {
 		expect(shouldCreateReviewNote(READING_STATUS.WISHLIST)).toBe(false);
+	});
+});
+
+describe('creditLineFor', () => {
+	const base: Book = { title: 'x', authors: [], provider: 'yes24' };
+
+	// YES24's Open API FAQ makes the credit and the product-page link a
+	// condition of use, so neither is behind `aladinCreditEnabled`.
+	it('always credits YES24 and links the product page', () => {
+		const line = creditLineFor(
+			{ ...base, providerUrl: 'https://www.yes24.com/product/goods/23030284' },
+			false,
+		);
+		expect(line).toBe(
+			'*도서 정보 제공: [YES24](https://www.yes24.com/product/goods/23030284)*',
+		);
+	});
+
+	it('still credits YES24 when the payload carried no product URL', () => {
+		expect(creditLineFor(base, false)).toBe('*도서 정보 제공: YES24*');
+	});
+
+	it('keeps the Aladin credit opt-out, since its terms only make it polite', () => {
+		const aladin = { ...base, provider: 'aladin', providerUrl: 'https://x' };
+		expect(creditLineFor(aladin, true)).toBe('*Book DB by [Aladin](https://x)*');
+		expect(creditLineFor(aladin, false)).toBeNull();
+	});
+
+	it('credits nothing for providers with no attribution requirement', () => {
+		for (const provider of ['kakao', 'google', 'openlibrary']) {
+			expect(
+				creditLineFor({ ...base, provider, providerUrl: 'https://x' }, true),
+			).toBeNull();
+		}
 	});
 });

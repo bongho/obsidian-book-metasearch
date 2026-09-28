@@ -106,11 +106,18 @@ export class BookSearchModal extends SuggestModal<Book> {
 		}
 
 		const meta = body.createDiv({ cls: 'bm-meta' });
+		// The provider's own `displayName`, not the raw id. This line is the
+		// source credit for a screen showing book data, which YES24's Open API
+		// FAQ makes a condition of use — "yes24" reads as a slug, "YES24" is
+		// the brand. Falls back to the id if a provider somehow isn't
+		// registered, so the source is never blank.
+		const source =
+			this.registry.get(book.provider)?.displayName ?? book.provider;
 		const parts = [
 			book.authors.join(', '),
 			book.publisher,
 			book.publishYear,
-			book.provider,
+			source,
 		].filter(Boolean);
 		meta.setText(parts.join(' · '));
 
