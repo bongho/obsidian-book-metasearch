@@ -86,6 +86,38 @@ export function deriveStatusUpdates(
  * Aladin's general-tier terms only make the credit polite, which is why that
  * one stays behind `aladinCreditEnabled`.
  */
+/**
+ * Providers whose terms make the credit a condition of use rather than a
+ * courtesy. Only these are force-appended to a user's own template — the
+ * optional ones would be an uninvited edit to someone's layout.
+ */
+const CREDIT_REQUIRED = new Set(['yes24']);
+
+export function isCreditRequired(providerId: string): boolean {
+	return CREDIT_REQUIRED.has(providerId);
+}
+
+/**
+ * A custom template bypasses `renderSkeleton`, and with it the credit footer —
+ * so a template user silently loses attribution the provider's terms require.
+ * Appends it when it is required and the template did not already place it
+ * (via `{{credit}}`, or by hand).
+ *
+ * Optional credits are deliberately not appended: editing someone's own layout
+ * uninvited is only justified by the compliance case.
+ */
+export function ensureRequiredCredit(
+	rendered: string,
+	book: Book,
+	aladinCreditEnabled: boolean,
+): string {
+	if (!isCreditRequired(book.provider)) return rendered;
+	const credit = creditLineFor(book, aladinCreditEnabled);
+	if (!credit || rendered.includes(credit)) return rendered;
+	const separator = rendered.endsWith('\n') ? '' : '\n';
+	return `${rendered}${separator}\n---\n\n${credit}\n`;
+}
+
 export function creditLineFor(
 	book: Book,
 	aladinCreditEnabled: boolean,
@@ -311,8 +343,13 @@ export class NoteWriter {
 			},
 		);
 
-		if (this.settings.autoFillDescription) {
-			const cleaned = stripHtml(book.description ?? '');
+		// An empty description means the lookup came back lean, not that the
+		// book has no description — YES24's `goods/itemList` carries no
+		// `contentDetail` at all, so a title-based refresh normalizes to `''`
+		// rather than `undefined`. Writing that through would blank a block the
+		// user can see. Keeping a stale description beats erasing a good one.
+		const cleaned = stripHtml(book.description ?? '');
+		if (this.settings.autoFillDescription && cleaned) {
 			// process() reads and writes atomically, so a concurrent user edit
 			// can't be clobbered between the two. Returning body unchanged when
 			// the markers are missing leaves the note untouched.
@@ -379,7 +416,13 @@ export class NoteWriter {
 				filename,
 				normalizePath(templatePath),
 			);
-			if (rendered !== null) return rendered;
+			if (rendered !== null) {
+				return ensureRequiredCredit(
+					rendered,
+					book,
+					this.settings.aladinCreditEnabled,
+				);
+			}
 			// Template missing or unreadable — fall through to built-in skeleton.
 		}
 		return this.renderSkeleton(book, filename);
@@ -544,6 +587,12 @@ export class NoteWriter {
 			localCover,
 			localCoverImage: localCover,
 			description: book.description ?? '',
+			tableOfContents: book.tableOfContents ?? '',
+			// Lets a template place the credit where it wants it. Without this
+			// the only option was assembling one from {{provider}} and
+			// {{providerUrl}} by hand — which assumes the author knows the
+			// provider's terms. When absent and required, it is appended.
+			credit: creditLineFor(book, this.settings.aladinCreditEnabled) ?? '',
 			provider: book.provider,
 			provider_url: book.providerUrl ?? '',
 			providerUrl: book.providerUrl ?? '',
