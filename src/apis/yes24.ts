@@ -296,6 +296,8 @@ export function normalizeYes24Item(item: Yes24Item, providerId: string): Book {
 	const { categoryLeaf, categoryPath } = parseGoodsSort(item.goodsSortNm);
 	const publishDate = formatPublishDate(item.publishDate);
 	const introduction = item.contentDetail?.bookIntroduction ?? '';
+	// `<b>1부 …</b>` markup and `\r\n` separators both come through raw.
+	const toc = stripHtml(item.contentDetail?.tableOfContents ?? '').trim();
 	return {
 		title: stripHtml(item.title ?? ''),
 		subtitle: item.subTitle?.trim() || undefined,
@@ -315,6 +317,7 @@ export function normalizeYes24Item(item: Yes24Item, providerId: string): Book {
 		categoryLeaf,
 		coverUrl: item.cover,
 		description: stripHtml(introduction),
+		tableOfContents: toc || undefined,
 		providerUrl: item.link,
 		provider: providerId,
 	};

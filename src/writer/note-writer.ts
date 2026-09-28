@@ -12,6 +12,12 @@ import { DuplicateBookError, VaultBookIndex } from './vault-index';
 const AUTO_START = '<!-- BOOKSEARCH:AUTO-START -->';
 const AUTO_END = '<!-- BOOKSEARCH:AUTO-END -->';
 
+// A second marker pair, so refreshing the table of contents can't disturb the
+// description block and vice versa. Distinct names rather than an index, so an
+// older note missing this pair is recognisable instead of matching by position.
+const TOC_START = '<!-- BOOKSEARCH:TOC-START -->';
+const TOC_END = '<!-- BOOKSEARCH:TOC-END -->';
+
 /**
  * Reading status constants — unified vocabulary for status transitions.
  * Only 'reading' and 'read' stages trigger Review note creation.
@@ -98,16 +104,26 @@ export function creditLineFor(
 export function replaceAutoBlock(
 	body: string,
 	newContent: string,
+	start: string = AUTO_START,
+	end: string = AUTO_END,
 ): { updated: string; found: boolean } {
-	const startIdx = body.indexOf(AUTO_START);
+	const startIdx = body.indexOf(start);
 	if (startIdx < 0) return { updated: body, found: false };
-	const endIdx = body.indexOf(AUTO_END, startIdx + AUTO_START.length);
+	const endIdx = body.indexOf(end, startIdx + start.length);
 	if (endIdx < 0) return { updated: body, found: false };
-	const before = body.slice(0, startIdx + AUTO_START.length);
+	const before = body.slice(0, startIdx + start.length);
 	const after = body.slice(endIdx);
 	const trimmed = newContent.trim();
 	const middle = trimmed ? `\n${trimmed}\n` : '\n';
 	return { updated: before + middle + after, found: true };
+}
+
+/** Refreshes the table-of-contents block. Same contract as the description. */
+export function replaceTocBlock(
+	body: string,
+	newContent: string,
+): { updated: string; found: boolean } {
+	return replaceAutoBlock(body, newContent, TOC_START, TOC_END);
 }
 
 /**
@@ -313,6 +329,18 @@ export class NoteWriter {
 			}
 		}
 
+		// A note created before this feature — or from a provider with no ToC —
+		// has no TOC markers. `found: false` leaves the body untouched, so the
+		// section is never retrofitted into an existing note; it appears on the
+		// next note created for the book, not by rewriting this one.
+		if (this.settings.autoFillTableOfContents && book.tableOfContents) {
+			const toc = stripHtml(book.tableOfContents);
+			await this.app.vault.process(file, (body) => {
+				const { updated, found } = replaceTocBlock(body, toc);
+				return found ? updated : body;
+			});
+		}
+
 		if (this.settings.enableCoverImageSave && book.coverUrl) {
 			void this.downloadCover(book.coverUrl, filename);
 		}
@@ -405,6 +433,19 @@ export class NoteWriter {
 			lines.push(stripHtml(book.description));
 		}
 		lines.push(AUTO_END);
+
+		// Only YES24 supplies a table of contents, and only for some titles.
+		// Emitting the heading unconditionally would leave an empty section on
+		// every note from every other provider, so the whole section is
+		// conditional — not just its contents.
+		if (this.settings.autoFillTableOfContents && book.tableOfContents) {
+			lines.push('');
+			lines.push('## Table of Contents');
+			lines.push('');
+			lines.push(TOC_START);
+			lines.push(stripHtml(book.tableOfContents));
+			lines.push(TOC_END);
+		}
 
 		const credit = creditLineFor(book, this.settings.aladinCreditEnabled);
 		if (credit) {

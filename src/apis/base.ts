@@ -43,6 +43,9 @@ export interface Book {
 	// Media & links
 	coverUrl?: string; // provider cover CDN URL
 	description?: string; // may contain HTML — strip before rendering
+	// Publisher-supplied table of contents. Detail-endpoint only — a search
+	// result never carries it, so it arrives via `enrich()`. May contain HTML.
+	tableOfContents?: string;
 	providerUrl?: string; // product/detail page (used for credit link per Aladin ToS)
 
 	// Debug — never persisted
