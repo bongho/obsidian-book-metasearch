@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a toggle would let a user switch off compliance without knowing it. Notes
   already created are **not** rewritten; the fix applies to notes created from
   here on.
+- Search results name the source by its brand rather than its slug — the meta
+  line already carried `book.provider`, but as the raw id (`yes24`). It now
+  resolves through the registry to the provider's own `displayName` (`YES24`,
+  `Kakao (다음 도서)`), which is the same requirement applied to the other
+  screen that shows book data.
 
 ### Added
 
