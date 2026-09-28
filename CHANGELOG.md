@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **"Update book info in current note" no longer erases the description.** When
+  a note has no usable ISBN, the refresh falls back to a title search — and
+  YES24's `goods/itemList` carries no `contentDetail`, so `normalizeYes24Item`
+  produced `description: ''` rather than `undefined`. That empty string was
+  written straight into the auto-block, blanking text the user could see. Two
+  changes: the refresh now skips an empty description rather than writing it
+  through (a stale description beats a destroyed one), and the update path runs
+  the same `enrich()` the create path already did, so the lean result is topped
+  up from the detail endpoint before anything is written. The ISBN branch was
+  never affected — it already queried the detail endpoint.
+- **Custom templates now carry the required YES24 credit.** Setting
+  `templateFile` bypasses the built-in skeleton, and with it the attribution
+  footer — so template users silently lost the credit and product link YES24's
+  terms require. The credit is appended to a rendered template when it is
+  required and not already present. Optional credits (Aladin's) are *not*
+  appended: editing someone's own layout uninvited is only justified by the
+  compliance case. Two new template variables, `{{credit}}` and
+  `{{tableOfContents}}`, let a template place both explicitly — previously the
+  only option was assembling a credit from `{{provider}}` and `{{providerUrl}}`
+  by hand, which assumed the template author knew the provider's terms.
+
 - **YES24 notes now carry the required source credit and product link.** The
   footer that writes an attribution line was gated on `provider === 'aladin'`,
   so every note built from YES24 — the Korean primary since the provider
