@@ -30,6 +30,7 @@ const baseSettings: BookMetasearchSettings = {
 	migrationBannerDismissedAt: '',
 	yes24PriorityMigratedAt: '',
 	autoFillDescription: true,
+	autoFillTableOfContents: true,
 	duplicateAction: 'ask',
 	readingStatusEnabled: true,
 	initialStatus: 'wishlist',

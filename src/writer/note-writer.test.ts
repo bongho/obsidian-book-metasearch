@@ -6,6 +6,7 @@ import {
 	creditLineFor,
 	deriveStatusUpdates,
 	replaceAutoBlock,
+	replaceTocBlock,
 	shouldCreateReviewNote,
 	READING_STATUS,
 } from './note-writer';
@@ -221,5 +222,48 @@ describe('creditLineFor', () => {
 				creditLineFor({ ...base, provider, providerUrl: 'https://x' }, true),
 			).toBeNull();
 		}
+	});
+});
+
+describe('replaceTocBlock', () => {
+	const TOC_START = '<!-- BOOKSEARCH:TOC-START -->';
+	const TOC_END = '<!-- BOOKSEARCH:TOC-END -->';
+
+	const withBoth = [
+		'## Abstract / Description',
+		'',
+		START,
+		'a description',
+		END,
+		'',
+		'## Table of Contents',
+		'',
+		TOC_START,
+		'stale toc',
+		TOC_END,
+		'',
+	].join('\n');
+
+	it('refreshes the toc block without touching the description block', () => {
+		const { updated, found } = replaceTocBlock(withBoth, '1부 인지혁명');
+		expect(found).toBe(true);
+		expect(updated).toContain(`${TOC_START}\n1부 인지혁명\n${TOC_END}`);
+		expect(updated).toContain(`${START}\na description\n${END}`);
+		expect(updated).not.toContain('stale toc');
+	});
+
+	it('leaves the toc alone when the description block is refreshed', () => {
+		const { updated } = replaceAutoBlock(withBoth, 'a fresher description');
+		expect(updated).toContain(`${TOC_START}\nstale toc\n${TOC_END}`);
+		expect(updated).toContain('a fresher description');
+	});
+
+	it('returns found=false on a note predating the feature, leaving it unchanged', () => {
+		// Only the description pair — the shape of every note created before
+		// the toc block existed. Nothing may be retrofitted.
+		const older = [START, 'a description', END, ''].join('\n');
+		const { updated, found } = replaceTocBlock(older, '1부 인지혁명');
+		expect(found).toBe(false);
+		expect(updated).toBe(older);
 	});
 });

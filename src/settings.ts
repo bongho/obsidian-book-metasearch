@@ -97,6 +97,11 @@ export interface BookMetasearchSettings {
 	// block with `book.description` from the provider. `update()` refreshes the
 	// same block on demand, preserving any user edits outside the markers.
 	autoFillDescription: boolean;
+	// Same contract for `## Table of Contents`, with one difference: the
+	// heading is written only when the book actually has one. Only YES24
+	// supplies it, and only for some titles, so an unconditional heading would
+	// leave an empty section on most notes.
+	autoFillTableOfContents: boolean;
 
 	// ── Duplicate detection (M1-A) ──
 	// What to do when a search result matches an existing book note by ISBN:
@@ -165,6 +170,7 @@ export const DEFAULT_SETTINGS: BookMetasearchSettings = {
 	migrationBannerDismissedAt: '',
 	yes24PriorityMigratedAt: '',
 	autoFillDescription: true,
+	autoFillTableOfContents: true,
 	duplicateAction: 'ask',
 	readingStatusEnabled: true,
 	initialStatus: 'wishlist',

@@ -27,6 +27,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Table of contents in new notes.** YES24's detail endpoint returns a
+  publisher-supplied `tableOfContents`, which the provider was discarding even
+  though the README already advertised it as something YES24 supplies and
+  Aladin did not. New notes now get a `## Table of Contents` section, filled
+  from that field and refreshable by "Update book info in current note" through
+  its own `BOOKSEARCH:TOC-*` marker pair — so refreshing the description can't
+  disturb it and vice versa. The heading is written **only when the book
+  actually has one**: no other provider supplies a table of contents, and some
+  YES24 titles lack it, so an unconditional heading would leave an empty
+  section on most notes. Costs no extra request — `enrich()` already fetches
+  `contentDetail` for the book the user picks. Notes created before this
+  change are never retrofitted; a missing marker pair leaves the body
+  untouched, same contract as the description block.
 - **YES24 provider** (`yes24`) — Korean primary, replacing Aladin ahead of its
   API shutdown. Search via `goods/itemList`, ISBN lookup and detail via
   `goods/itemDetail?detail=Y`, `X-API-KEY` header auth, 20,000 requests/day on

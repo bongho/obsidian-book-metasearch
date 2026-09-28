@@ -70,6 +70,19 @@ describe('normalizeYes24Item', () => {
 		});
 	});
 
+	it('maps the table of contents, stripping its markup', () => {
+		const book = normalizeYes24Item(SAPIENS, 'yes24');
+		expect(book.tableOfContents).toBe('1부 인지혁명');
+	});
+
+	it('leaves tableOfContents unset when the payload has none', () => {
+		// A search-result item carries no contentDetail at all, so the field
+		// must stay undefined rather than becoming an empty string — otherwise
+		// the note writer emits a heading over nothing.
+		const lean: Yes24Item = { title: '사피엔스' };
+		expect(normalizeYes24Item(lean, 'yes24').tableOfContents).toBeUndefined();
+	});
+
 	it('strips HTML from the book introduction', () => {
 		const book = normalizeYes24Item(SAPIENS, 'yes24');
 		expect(book.description).not.toContain('<b>');
