@@ -149,6 +149,24 @@ local-push workaround — run `gh auth refresh -s workflow` first.
    throwaway probe against the live API, remember
    `// @vitest-environment node` (see Test / lint / build above) and don't
    commit it.
+7. Step 2 changes the default *for new installs only*. `loadSettings()`
+   shallow-merges a saved `data.json` over `DEFAULT_SETTINGS`, so an existing
+   install keeps its old `priorityOrder` — and `ProviderRegistry`
+   `resolveOrdered()` appends any id missing from that saved order **last**.
+   Under the default `sequential` strategy the first non-empty result wins, so
+   a new provider added this way is never reached on an upgrade, while every
+   test still passes because fixtures are fresh installs. Write a one-time
+   migration that splices the id into the saved order, gated on its own
+   timestamp field — see `migratePriorityOrder` / `yes24PriorityMigratedAt` in
+   `src/settings.ts`. The stamp is not optional: `priorityOrder` is a free-text
+   field in the settings tab, so an ungated migration would re-splice the id
+   every load and make removing the provider impossible.
+8. If the provider has a detail endpoint richer than its search endpoint,
+   don't merge the two with a plain spread. Every `normalize<X>Item` emits
+   every `Book` key, filling `undefined` where the payload had nothing, so
+   `{...searchHit, ...normalizeDetail(item)}` blanks any field the search hit
+   supplied and the detail response omitted. Merge with something that skips
+   `undefined` — see `mergeEnriched` in `src/apis/yes24.ts`.
 
 ## Release process
 
