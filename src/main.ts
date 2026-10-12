@@ -463,7 +463,12 @@ export default class BookMetasearchPlugin extends Plugin {
 				new Notice('업데이트할 결과를 찾을 수 없습니다.');
 				return;
 			}
-			await this.writer.update(file, book);
+			// The title fallback above goes through `searchByQuery`, whose
+			// result is lean — no description, no page count, no table of
+			// contents. Without this the refresh would overwrite good fields
+			// with the thin ones. (The ISBN branch already hits the detail
+			// endpoint, so for it this is a no-op beyond one cached lookup.)
+			await this.writer.update(file, await this.enrich(book));
 			new Notice(`노트 업데이트 완료: ${file.path}`);
 		} catch (e) {
 			const msg = e instanceof Error ? e.message : String(e);

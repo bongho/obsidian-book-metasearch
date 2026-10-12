@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Book } from '../apis/base';
+import { DEFAULT_SETTINGS } from '../settings';
+import { NoteWriter } from './note-writer';
 import {
 	appendPriceWatchRows,
 	creditLineFor,
+	ensureRequiredCredit,
+	isCreditRequired,
 	deriveStatusUpdates,
 	replaceAutoBlock,
 	replaceTocBlock,
@@ -265,5 +269,111 @@ describe('replaceTocBlock', () => {
 		const { updated, found } = replaceTocBlock(older, '1부 인지혁명');
 		expect(found).toBe(false);
 		expect(updated).toBe(older);
+	});
+});
+
+describe('isCreditRequired', () => {
+	// Drives whether the credit is force-appended to a user's own template.
+	// Only providers whose terms make it a condition of use qualify.
+	it('is true for yes24 and false for the rest', () => {
+		expect(isCreditRequired('yes24')).toBe(true);
+		for (const id of ['aladin', 'kakao', 'google', 'openlibrary', '']) {
+			expect(isCreditRequired(id)).toBe(false);
+		}
+	});
+});
+
+describe('ensureRequiredCredit', () => {
+	const yes24: Book = {
+		title: '사피엔스',
+		authors: [],
+		provider: 'yes24',
+		providerUrl: 'https://www.yes24.com/product/goods/23030284',
+	};
+	const CREDIT =
+		'*도서 정보 제공: [YES24](https://www.yes24.com/product/goods/23030284)*';
+
+	it('appends the credit a template omitted', () => {
+		const out = ensureRequiredCredit('# 사피엔스\n\n내 템플릿 본문\n', yes24, true);
+		expect(out).toContain('내 템플릿 본문');
+		expect(out.endsWith(`---\n\n${CREDIT}\n`)).toBe(true);
+	});
+
+	it('does not duplicate one the template already placed via {{credit}}', () => {
+		const body = `# 사피엔스\n\n${CREDIT}\n\n본문\n`;
+		expect(ensureRequiredCredit(body, yes24, true)).toBe(body);
+	});
+
+	it('normalizes a template that does not end in a newline', () => {
+		const out = ensureRequiredCredit('본문 끝', yes24, true);
+		expect(out).toBe(`본문 끝\n\n---\n\n${CREDIT}\n`);
+	});
+
+	// Aladin's credit is a courtesy, not a condition — appending it would be an
+	// uninvited edit to someone's own layout.
+	it('leaves an optional credit out of a template entirely', () => {
+		const aladin: Book = { ...yes24, provider: 'aladin' };
+		const body = '# 책\n\n내 템플릿\n';
+		expect(ensureRequiredCredit(body, aladin, true)).toBe(body);
+	});
+});
+
+describe('NoteWriter.update — description refresh', () => {
+	const START = '<!-- BOOKSEARCH:AUTO-START -->';
+	const END = '<!-- BOOKSEARCH:AUTO-END -->';
+
+	/** Minimal App: just the two surfaces update() touches. */
+	function stubApp(initialBody: string) {
+		const state = { body: initialBody };
+		return {
+			state,
+			app: {
+				fileManager: {
+					processFrontMatter: async (
+						_f: unknown,
+						cb: (fm: Record<string, unknown>) => void,
+					) => {
+						cb({});
+					},
+				},
+				vault: {
+					process: async (_f: unknown, cb: (b: string) => string) => {
+						state.body = cb(state.body);
+						return state.body;
+					},
+				},
+			},
+		};
+	}
+
+	const file = { basename: '사피엔스', path: '책/사피엔스.md' };
+
+	// The bug: YES24's goods/itemList carries no contentDetail, so
+	// normalizeYes24Item produces description === '' rather than undefined, and
+	// the refresh wrote that straight through — erasing a block the user could
+	// see. A stale description beats a destroyed one.
+	it('leaves an existing description alone when the lookup came back lean', async () => {
+		const { state, app } = stubApp(`${START}\n기존 책 소개\n${END}\n`);
+		const w = new NoteWriter(app as never, { ...DEFAULT_SETTINGS });
+		await w.update(file as never, {
+			title: '사피엔스',
+			authors: ['유발 하라리'],
+			provider: 'yes24',
+			description: '',
+		});
+		expect(state.body).toContain('기존 책 소개');
+	});
+
+	it('still replaces the block when the lookup did carry a description', async () => {
+		const { state, app } = stubApp(`${START}\n기존 책 소개\n${END}\n`);
+		const w = new NoteWriter(app as never, { ...DEFAULT_SETTINGS });
+		await w.update(file as never, {
+			title: '사피엔스',
+			authors: ['유발 하라리'],
+			provider: 'yes24',
+			description: '새 책 소개',
+		});
+		expect(state.body).toContain('새 책 소개');
+		expect(state.body).not.toContain('기존 책 소개');
 	});
 });

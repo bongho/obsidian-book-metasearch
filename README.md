@@ -19,7 +19,7 @@ From the community plugin directory:
 - **4-provider metasearch**: YES24 (Korean primary) · Kakao (Korean recall) · Google Books (foreign primary) · Open Library (foreign covers/ISBN)
 - **Two strategies**: Sequential fallback (default) or parallel Fanout with ISBN13 dedupe
 - **Commands**: Search books · Search by ISBN · Search based on current note · Update book info · Migration helper
-- **Template file** support with `{{variable}}` substitution — Templater `<% %>` blocks are preserved for post-creation execution
+- **Template file** support with `{{variable}}` substitution (including `{{credit}}` and `{{tableOfContents}}`; a required source credit is appended automatically if the template omits it) — Templater `<% %>` blocks are preserved for post-creation execution
 - **Frontmatter customization**: `useDefaultFrontmatter` toggle · key case (`as-is` / `camelCase` / `snake_case` / `kebab-case`) · additional YAML fragment with `{{variable}}` substitution
 - **Cover image download** to a configurable folder
 - **37 ISO 639-1 locale codes** for cross-provider language filtering
