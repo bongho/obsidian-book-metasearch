@@ -1,7 +1,11 @@
 import { Editor, Notice, Plugin, TFile } from 'obsidian';
 
 import type { Book, PriceQuote } from './apis/base';
-import { AladinProvider } from './apis/aladin';
+import {
+	ALADIN_API_RETIRED_ON,
+	AladinProvider,
+	isAladinApiRetired,
+} from './apis/aladin';
 import { GoogleBooksProvider } from './apis/google-books';
 import { KakaoProvider } from './apis/kakao';
 import { OpenLibraryProvider } from './apis/openlibrary';
@@ -303,6 +307,16 @@ export default class BookMetasearchPlugin extends Plugin {
 	}
 
 	private async checkUsedPrice(file: TFile): Promise<void> {
+		// Checked before the request, not after: a retired key gets HTTP 200
+		// with no item, which `searchUsedPrices` cannot tell apart from a book
+		// with no used listings. See ALADIN_API_RETIRED_ON.
+		if (isAladinApiRetired(new Date())) {
+			new Notice(
+				`알라딘 오픈 API가 ${ALADIN_API_RETIRED_ON}에 종료되어 중고가를 조회할 수 없습니다.`,
+				8000,
+			);
+			return;
+		}
 		const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
 		const raw: unknown = fm?.['isbn'];
 		if (typeof raw !== 'string' || !raw.trim()) {

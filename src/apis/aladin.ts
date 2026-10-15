@@ -33,6 +33,36 @@ import { isRealIsbn10 } from '../util/isbn';
 const ALADIN_BASE = 'https://www.aladin.co.kr/ttb/api';
 const ALADIN_VERSION = '20131101'; // Documented latest API version
 
+/**
+ * The day Aladin stops serving existing TTB Keys, per the shutdown notice
+ * (https://blog.aladin.co.kr/cscenter/17483675: "기존 이용자 OpenAPI 서비스
+ * 종료 : 2026년 10월 30일").
+ *
+ * Callers must check `isAladinApiRetired()` *before* a lookup rather than
+ * reading the answer, because the answer cannot be trusted to say so. Aladin
+ * returns HTTP 200 for everything, and a 200 carrying no `item` is
+ * indistinguishable here from a book that simply has no used listings — so a
+ * dead API surfaces to the user as a successful "중고 매물 없음".
+ *
+ * The notice names the date without a time, so this turns the feature off at
+ * the *start* of that day rather than the end. Losing a last day that might
+ * still have worked beats appending a wrong price row to someone's note, and
+ * 2026-10-30 is already the date the README, the CHANGELOG and the Aladin
+ * settings card all show the user.
+ */
+export const ALADIN_API_RETIRED_ON = '2026-10-30';
+
+/**
+ * Compares local calendar dates, not UTC. The shutdown is a Korean date, and
+ * `toISOString()` would keep the feature alive until 09:00 KST on the 30th.
+ */
+export function isAladinApiRetired(now: Date): boolean {
+	const y = now.getFullYear();
+	const m = String(now.getMonth() + 1).padStart(2, '0');
+	const d = String(now.getDate()).padStart(2, '0');
+	return `${y}-${m}-${d}` >= ALADIN_API_RETIRED_ON;
+}
+
 /** Raw Aladin item shape — subset that we care about. */
 interface AladinItem {
 	title: string;
