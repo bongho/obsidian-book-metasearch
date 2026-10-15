@@ -14,14 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   request and shows a Notice naming the shutdown. Without the guard the
   failure was silent in the worst way: Aladin answers HTTP 200 for
   everything, and `searchUsedPrices` returns `[]` for a response carrying no
-  `item`, which the command renders as "중고 매물 없음" — a dead API read back
+  `item`, which the command renders as "중고 매물 없음": a dead API read back
   to the user as a successful lookup, and in `section` output mode as a row
   appended to their note. The date is compared on the local calendar, not
   UTC, so the cutover lands at midnight where the user is rather than 09:00
   KST. Aladin's notice gives the date without a time, so the feature turns
   off at the start of the 30th; a possibly-working last day is worth less
   than a wrong price in a note. Used-book pricing has no replacement
-  provider — YES24's Open API does not expose one.
+  provider, and YES24's Open API does not expose one.
   a note has no usable ISBN, the refresh falls back to a title search — and
   YES24's `goods/itemList` carries no `contentDetail`, so `normalizeYes24Item`
   produced `description: ''` rather than `undefined`. That empty string was
