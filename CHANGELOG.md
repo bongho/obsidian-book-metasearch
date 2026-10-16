@@ -62,6 +62,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Review notes are created automatically.** Marking a book `reading` or
+  `read` now also creates `Review - <title>.md` in a `Reviews/` folder
+  beside the notes folder, with a backlink to the book. `wishlist` does not
+  trigger one, and an existing review is left alone, so re-marking a book is
+  idempotent. Shipped in the `v1.2.5` GitHub release on 2026-08-29 but never
+  reached anyone: `manifest.json` still said `1.2.4`, and Obsidian installs
+  the release whose tag matches the manifest version. 1.3.0 is the first
+  release that actually delivers it.
 - **Table of contents in new notes.** YES24's detail endpoint returns a
   publisher-supplied `tableOfContents`, which the provider was discarding even
   though the README already advertised it as something YES24 supplies and
