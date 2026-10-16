@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-16
+
 ### Fixed
 
 - **"Check used-book price (Aladin)" now says the API is gone instead of
@@ -379,7 +381,8 @@ dedupe + Reading Log), M2 (citation insert), M3 (Aladin used-price), and M4
   `obsidian-book-search-plugin` config and guides users through Aladin
   setup.
 
-[Unreleased]: https://github.com/bongho/obsidian-book-metasearch/compare/1.2.2...HEAD
+[Unreleased]: https://github.com/bongho/obsidian-book-metasearch/compare/1.3.0...HEAD
+[1.3.0]: https://github.com/bongho/obsidian-book-metasearch/compare/1.2.4...1.3.0
 [1.2.2]: https://github.com/bongho/obsidian-book-metasearch/compare/1.2.1...1.2.2
 [1.2.1]: https://github.com/bongho/obsidian-book-metasearch/compare/1.2.0...1.2.1
 [1.2.0]: https://github.com/bongho/obsidian-book-metasearch/compare/1.1.0...1.2.0
