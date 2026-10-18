@@ -1,10 +1,11 @@
 {
 	"id": "book-metasearch",
 	"name": "Book Metasearch",
-	"version": "1.3.0",
+	"version": "1.3.1",
 	"minAppVersion": "1.4.4",
 	"description": "Book note maker with metasearch across YES24, Kakao, Google Books, and Open Library. Korean-first with foreign fallback; covers the Naver (2026-08-01) and Aladin (2026-10-30) book API shutdowns.",
 	"author": "BongHo Lee",
 	"authorUrl": "https://github.com/bongho",
+	"fundingUrl": "https://buymeacoffee.com/bongho",
 	"isDesktopOnly": false
 }
