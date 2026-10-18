@@ -2,6 +2,8 @@
 
 Book note maker with metasearch across **YES24 · Kakao · Google Books · Open Library**, queried in parallel. Korean-first with foreign fallback.
 
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy_me_a-coffee-ffdd00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/bongho)
+
 Successor to [anpigon/obsidian-book-search-plugin](https://github.com/anpigon/obsidian-book-search-plugin) (unmaintained). Built to solve the Naver Book Search API EOL (2026-08-01) and provide a proper Korean-first book note workflow.
 
 ## Install
