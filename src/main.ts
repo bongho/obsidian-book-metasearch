@@ -19,7 +19,9 @@ import {
 	BookMetasearchSettings,
 	DEFAULT_SETTINGS,
 	migratePriorityOrder,
+	planSecretMigration,
 } from './settings';
+import type { LegacySecretField } from './settings';
 import { DuplicateModal } from './ui/duplicate-modal';
 import type { DuplicateAction } from './ui/duplicate-modal';
 import { IsbnInputModal } from './ui/isbn-input-modal';
@@ -53,10 +55,12 @@ export default class BookMetasearchPlugin extends Plugin {
 		await this.loadSettings();
 
 		this.registry = new ProviderRegistry();
-		this.yes24 = new Yes24Provider(() => this.settings.yes24ApiKey);
-		this.aladin = new AladinProvider(() => this.settings.aladinTtbKey);
-		this.kakao = new KakaoProvider(() => this.settings.kakaoRestApiKey);
-		this.google = new GoogleBooksProvider(() => this.settings.googleBooksApiKey);
+		this.yes24 = new Yes24Provider(() => this.secret(this.settings.yes24SecretId));
+		this.aladin = new AladinProvider(() => this.secret(this.settings.aladinSecretId));
+		this.kakao = new KakaoProvider(() => this.secret(this.settings.kakaoSecretId));
+		this.google = new GoogleBooksProvider(() =>
+			this.secret(this.settings.googleBooksSecretId),
+		);
 		this.openLibrary = new OpenLibraryProvider();
 		// Registration order is the fallback order for providers absent from
 		// `priorityOrder`; YES24 leads now that Aladin is winding down.
@@ -265,17 +269,69 @@ export default class BookMetasearchPlugin extends Plugin {
 
 	onunload(): void {}
 
+	/**
+	 * Reads key material for a settings field that holds a keychain id.
+	 *
+	 * Returns `''` both for an unset field and for a secret the user has since
+	 * deleted from the keychain, which is what every provider already treats
+	 * as "not configured".
+	 */
+	secret(id: string): string {
+		if (!id) return '';
+		return this.app.secretStorage.getSecret(id) ?? '';
+	}
+
 	async loadSettings(): Promise<void> {
-		const loaded = (await this.loadData()) as Partial<BookMetasearchSettings> | null;
+		const loaded = (await this.loadData()) as
+			| (Partial<BookMetasearchSettings> &
+					Partial<Record<LegacySecretField, unknown>>)
+			| null;
 		this.settings = { ...DEFAULT_SETTINGS, ...(loaded ?? {}) };
+		let dirty = false;
 		if (!this.settings.yes24PriorityMigratedAt) {
 			this.settings.priorityOrder = migratePriorityOrder(
 				this.settings.priorityOrder,
 				this.settings.yes24PriorityMigratedAt,
 			);
 			this.settings.yes24PriorityMigratedAt = new Date().toISOString();
-			await this.saveSettings();
+			dirty = true;
 		}
+		if (!this.settings.secretsMigratedAt) {
+			this.migrateSecrets(loaded ?? {});
+			this.settings.secretsMigratedAt = new Date().toISOString();
+			dirty = true;
+		}
+		if (dirty) await this.saveSettings();
+	}
+
+	/**
+	 * Moves pre-1.4.0 plaintext keys into `app.secretStorage` and strips them
+	 * from the settings object. One-shot, stamped by `secretsMigratedAt`.
+	 *
+	 * Deliberately loud. The keychain is local storage keyed to this vault, so
+	 * unlike `data.json` it does not travel with a synced vault: a user with a
+	 * second machine has to re-enter the key there, and finding that out by
+	 * having searches silently stop working would be worse than a Notice.
+	 */
+	private migrateSecrets(
+		loaded: Partial<Record<LegacySecretField, unknown>>,
+	): void {
+		const plan = planSecretMigration(loaded, this.settings.secretsMigratedAt);
+		if (!plan) return;
+		for (const { id, value } of plan.writes) {
+			this.app.secretStorage.setSecret(id, value);
+		}
+		Object.assign(this.settings, plan.ids);
+		for (const field of plan.clear) {
+			delete (this.settings as unknown as Record<string, unknown>)[field];
+		}
+		if (plan.writes.length === 0) return;
+		new Notice(
+			`Book Metasearch: API 키 ${plan.writes.length}개를 Obsidian 키체인으로 옮겼습니다. ` +
+				'data.json에 있던 평문 사본은 지웠습니다. 키체인은 이 기기에만 저장되므로 ' +
+				'다른 기기에서는 설정에서 키를 다시 지정해 주세요.',
+			15000,
+		);
 	}
 
 	async saveSettings(): Promise<void> {

@@ -70,7 +70,7 @@ issuing new API keys on 2026-09-04 and shuts the API down entirely on
 2026-10-30. It stays *registered* — still working for anyone holding a valid TTB
 Key — but was dropped from the default `priorityOrder` in favour of YES24. The
 rationale lives next to the setting it governs, in `src/settings.ts` (see the
-comment on `aladinTtbKey`); this entry exists so the deadline is discoverable
+comment on `aladinSecretId`); this entry exists so the deadline is discoverable
 without reading the source. Don't re-promote Aladin to the default order, and
 don't delete `src/apis/aladin.ts` before the shutdown date — removal is v2.0.0.
 The used-book price check goes with it and has no replacement: no Korean
@@ -136,8 +136,9 @@ local-push workaround — run `gh auth refresh -s workflow` first.
    - `searchByISBN(isbn) → Book | null`
 2. Register in `src/main.ts` `onload()` and add the id to `priorityOrder`
    default in `src/settings.ts`.
-3. Add a settings UI card in `src/ui/settings-tab.ts` (API key input +
-   healthcheck button).
+3. Add a settings UI card in `src/ui/settings-tab.ts`. Key material goes
+   through `addSecretPicker()` into `app.secretStorage`; the settings field
+   stores the secret's id, never the key. Add a healthcheck button beside it.
 4. Every HTTP request must use Obsidian's `requestUrl()` — not `fetch()` —
    for CORS transparency and reliability.
 5. Reuse pure utilities in `src/util/` (`isbn.ts`, `html.ts`,

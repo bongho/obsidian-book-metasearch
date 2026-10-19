@@ -11,9 +11,10 @@ it does. JSON takes no comments, so the reasoning has nowhere else to go.
 **`ask` — outward-facing or hard to undo.** `git push`, `gh pr create|merge`,
 `gh release`, and `npm install` all reach past this working copy. `git tag` is
 on the list for a non-obvious reason: `.github/workflows/release.yml` triggers
-on tag push, so a tag is a deploy. `data.json` is `ask` rather than `deny`
-because it holds the live YES24 and Aladin API keys — reading it is sometimes
-legitimately needed, but never incidentally.
+on tag push, so a tag is a deploy. `data.json` no longer holds API keys (they
+moved to `app.secretStorage` in #48), but it is still `ask` rather than
+allowed: it is the user's live configuration, including vault paths and the
+ids of their stored secrets.
 
 **`deny` — no legitimate agent use.** `npm publish` (this is a community
 plugin; publishing is a maintainer action outside Claude Code) and `.env`

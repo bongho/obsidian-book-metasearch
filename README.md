@@ -25,7 +25,7 @@ From the community plugin directory:
 - **Frontmatter customization**: `useDefaultFrontmatter` toggle · key case (`as-is` / `camelCase` / `snake_case` / `kebab-case`) · additional YAML fragment with `{{variable}}` substitution
 - **Cover image download** to a configurable folder
 - **37 ISO 639-1 locale codes** for cross-provider language filtering
-- **API keys masked** in settings with click-to-reveal
+- **API keys kept in Obsidian's keychain**, not in the plugin's `data.json`
 - **Cover thumbnails** in search results (opt-in)
 - **Naver EOL migration**: opt-in helper detects an existing `obsidian-book-search-plugin` config and guides users through Aladin setup
 

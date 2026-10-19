@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **API keys moved out of `data.json` into Obsidian's keychain.** The four
+  provider keys now live in `app.secretStorage`, and the plugin's settings
+  file keeps only each secret's id. A synced vault no longer carries key
+  material. Keys already configured are moved on first load, the plaintext
+  copies are deleted, and a Notice reports that it happened.
+
+  **The keychain is local to one vault on one device, and is not synced.** A
+  second machine has to point the setting at a key again. That is the trade:
+  the keys stop travelling inside a file that syncs.
+
+  Each key field is now a keychain picker instead of a masked text box, so a
+  key another plugin already holds can be selected rather than pasted again.
+
+  Raises `minAppVersion` from 1.4.4 to **1.11.4**, the release that added
+  `SecretStorage`. Installs on an older Obsidian stop being offered updates.
+
+  Closes #48 and unblocks #11: the declarative `secret` control persists a
+  reference to a stored secret rather than the secret itself, so it could not
+  be adopted while the keys still lived in `data.json`.
 ## [1.3.1] - 2026-10-18
 
 ### Added

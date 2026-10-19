@@ -92,6 +92,19 @@ export class Setting {
 	addButton(_cb: (b: any) => void): this {
 		return this;
 	}
+	addComponent(_cb: (el: any) => any): this {
+		return this;
+	}
+}
+
+export class SecretComponent {
+	constructor(public app: any, public containerEl: any) {}
+	setValue(_value: string): this {
+		return this;
+	}
+	onChange(_cb: (value: string | null) => unknown): this {
+		return this;
+	}
 }
 
 /** Not used in unit tests — every request goes through mocks. */
