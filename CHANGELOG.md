@@ -28,6 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Closes #48 and unblocks #11: the declarative `secret` control persists a
   reference to a stored secret rather than the secret itself, so it could not
   be adopted while the keys still lived in `data.json`.
+## [1.3.1] - 2026-10-18
+
+### Added
+
+- A Buy Me a Coffee link (`fundingUrl`), so the plugin page in Obsidian
+  shows a way to support the plugin.
 
 ## [1.3.0] - 2026-10-16
 
