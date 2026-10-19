@@ -7,6 +7,7 @@ import {
 	hasNaverCredentials,
 } from '../migration/naver-detector';
 import type { BookMetasearchSettings } from '../settings';
+import { MIGRATED_SECRET_IDS } from '../settings';
 import { dumpErrorNote } from '../util/error-dump';
 
 /**
@@ -32,7 +33,20 @@ export class MigrationModal extends Modal {
 		private readonly deps: MigrationModalDeps,
 	) {
 		super(app);
-		this.ttbKeyInput = deps.settings.aladinTtbKey;
+		const id = deps.settings.aladinSecretId;
+		this.ttbKeyInput = id ? (app.secretStorage.getSecret(id) ?? '') : '';
+	}
+
+	/**
+	 * The keychain entry the TTB key goes to. An install arriving from the
+	 * Naver helper usually has no Aladin secret yet, so fall back to the same
+	 * id the 1.4.0 migration uses instead of coining a second name for it.
+	 */
+	private saveTtbKey(): void {
+		const id =
+			this.deps.settings.aladinSecretId || MIGRATED_SECRET_IDS.aladinSecretId;
+		this.app.secretStorage.setSecret(id, this.ttbKeyInput);
+		this.deps.settings.aladinSecretId = id;
 	}
 
 	onOpen(): void {
@@ -105,7 +119,7 @@ export class MigrationModal extends Modal {
 						try {
 							// 임시 저장 후 검사 (사용자가 완료 안 하면 롤백해도 되지만
 							// 실행 즉시 저장이 UX 편함)
-							this.deps.settings.aladinTtbKey = this.ttbKeyInput;
+							this.saveTtbKey();
 							await this.deps.saveSettings();
 
 							const status = await this.deps.aladin.healthcheck();
@@ -193,7 +207,7 @@ export class MigrationModal extends Modal {
 					.setButtonText('완료')
 					.setCta()
 					.onClick(async () => {
-						this.deps.settings.aladinTtbKey = this.ttbKeyInput;
+						this.saveTtbKey();
 						this.deps.settings.migrationCompletedAt =
 							new Date().toISOString();
 						await this.deps.saveSettings();

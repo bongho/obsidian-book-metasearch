@@ -1,9 +1,11 @@
 /**
  * Plugin settings — persisted via `Plugin.saveData()` to `data.json`.
  *
- * ⚠️ `data.json` contains user secrets (YES24 / Aladin API keys etc.) and is
- * gitignored in the plugin repo. When a user files a bug report, redact
- * `yes24ApiKey` and `aladinTtbKey` before sharing.
+ * API keys are no longer among them. Since 1.4.0 the four provider keys live
+ * in `app.secretStorage` and `data.json` carries only their ids, so a synced
+ * vault no longer carries key material. `planSecretMigration()` below moves
+ * older installs over; `redactSecrets()` in `util/error-dump.ts` is what still
+ * has to see the values, and it reads them from the keychain.
  */
 
 export type FrontmatterKeyCase =
@@ -14,12 +16,15 @@ export type FrontmatterKeyCase =
 
 export interface BookMetasearchSettings {
 	// ── Provider auth ──
-	yes24ApiKey: string;
+	// Ids of entries in `app.secretStorage`, not the key material itself. An
+	// empty string means unconfigured, which is the same thing every provider
+	// already checks its getter's result for.
+	yes24SecretId: string;
 	// Aladin's Open API shuts down 2026-10-30 (new keys stopped 2026-09-04).
 	// Kept working for users whose key is still valid; removed in v2.0.0.
-	aladinTtbKey: string;
-	kakaoRestApiKey: string;
-	googleBooksApiKey: string; // optional — improves rate limit
+	aladinSecretId: string;
+	kakaoSecretId: string;
+	googleBooksSecretId: string; // optional — improves rate limit
 
 	// ── Provider priority for sequential fallback / fanout ordering ──
 	priorityOrder: string[];
@@ -91,6 +96,11 @@ export interface BookMetasearchSettings {
 	// `yes24`. Its presence is what stops the splice from repeating, so a user
 	// who deliberately drops yes24 from the order keeps it dropped.
 	yes24PriorityMigratedAt: string;
+	// ISO timestamp of the one-time move of plaintext API keys into
+	// `app.secretStorage`. Stamped even when there was nothing to move, so a
+	// user who later clears a secret does not get the old plaintext copy
+	// resurrected from a `data.json` that still has the field.
+	secretsMigratedAt: string;
 
 	// ── Note body auto-fill (M0-D) ──
 	// When true, `renderSkeleton` fills the `## Abstract / Description` AUTO
@@ -144,10 +154,10 @@ export interface BookMetasearchSettings {
 }
 
 export const DEFAULT_SETTINGS: BookMetasearchSettings = {
-	yes24ApiKey: '',
-	aladinTtbKey: '',
-	kakaoRestApiKey: '',
-	googleBooksApiKey: '',
+	yes24SecretId: '',
+	aladinSecretId: '',
+	kakaoSecretId: '',
+	googleBooksSecretId: '',
 	priorityOrder: ['yes24', 'kakao', 'google', 'openlibrary'],
 	searchStrategy: 'sequential',
 	notesFolder: '85. References (Book Search)',
@@ -169,6 +179,7 @@ export const DEFAULT_SETTINGS: BookMetasearchSettings = {
 	migrationCompletedAt: '',
 	migrationBannerDismissedAt: '',
 	yes24PriorityMigratedAt: '',
+	secretsMigratedAt: '',
 	autoFillDescription: true,
 	autoFillTableOfContents: true,
 	duplicateAction: 'ask',
@@ -205,4 +216,86 @@ export function migratePriorityOrder(
 	const migrated = [...order];
 	migrated.splice(aladinAt < 0 ? 0 : aladinAt, 0, 'yes24');
 	return migrated;
+}
+
+/**
+ * The keychain ids `planSecretMigration()` creates. Only starting names: the
+ * settings tab lets the user point a field at any entry in the keychain, and
+ * that choice overwrites the id in `data.json`.
+ *
+ * `SecretStorage.setSecret()` throws on anything but lowercase alphanumerics
+ * and dashes, so these have to stay in that shape.
+ */
+export const MIGRATED_SECRET_IDS = {
+	yes24SecretId: 'book-metasearch-yes24',
+	aladinSecretId: 'book-metasearch-aladin-ttb',
+	kakaoSecretId: 'book-metasearch-kakao',
+	googleBooksSecretId: 'book-metasearch-google-books',
+} as const;
+
+/** Settings fields holding a `secretStorage` id. */
+export type SecretIdField = keyof typeof MIGRATED_SECRET_IDS;
+
+/** The fields `data.json` used for key material before 1.4.0. */
+export type LegacySecretField =
+	| 'yes24ApiKey'
+	| 'aladinTtbKey'
+	| 'kakaoRestApiKey'
+	| 'googleBooksApiKey';
+
+const LEGACY_TO_ID_FIELD: Record<LegacySecretField, SecretIdField> = {
+	yes24ApiKey: 'yes24SecretId',
+	aladinTtbKey: 'aladinSecretId',
+	kakaoRestApiKey: 'kakaoSecretId',
+	googleBooksApiKey: 'googleBooksSecretId',
+};
+
+export interface SecretMigrationPlan {
+	/** `setSecret(id, value)` calls to make. */
+	writes: { id: string; value: string }[];
+	/** Settings fields to point at the ids just written. */
+	ids: Partial<Record<SecretIdField, string>>;
+	/** Legacy fields to delete from the settings object before saving. */
+	clear: LegacySecretField[];
+}
+
+/**
+ * Plans the one-time move of plaintext API keys out of `data.json`.
+ *
+ * Pure on purpose. `SecretStorage` only exists inside a running Obsidian, so
+ * the decision of what moves where is kept here where it can be tested, and
+ * `main.ts` is left holding nothing but the writes.
+ *
+ * Returns `null` when there is nothing to do — a stamped install, or a fresh
+ * one that never had plaintext keys.
+ *
+ * `clear` lists a field whenever `data.json` carried it, including when its
+ * value was blank or not a string. The caller has to `delete` those keys
+ * rather than blank them: `saveData()` writes whatever properties the object
+ * carries, and a key that stays in the file is a key that comes back on the
+ * next shallow merge.
+ */
+export function planSecretMigration(
+	loaded: Partial<Record<LegacySecretField, unknown>>,
+	migratedAt: string,
+): SecretMigrationPlan | null {
+	if (migratedAt) return null;
+	const plan: SecretMigrationPlan = { writes: [], ids: {}, clear: [] };
+	const pairs = Object.entries(LEGACY_TO_ID_FIELD) as [
+		LegacySecretField,
+		SecretIdField,
+	][];
+	for (const [legacy, idField] of pairs) {
+		if (!(legacy in loaded)) continue;
+		plan.clear.push(legacy);
+		const value = loaded[legacy];
+		if (typeof value !== 'string') continue;
+		const trimmed = value.trim();
+		if (!trimmed) continue;
+		const id = MIGRATED_SECRET_IDS[idField];
+		plan.writes.push({ id, value: trimmed });
+		plan.ids[idField] = id;
+	}
+	if (plan.clear.length === 0) return null;
+	return plan;
 }

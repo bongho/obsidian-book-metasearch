@@ -9,9 +9,10 @@ import type { HealthStatus } from '../apis/base';
  *
  * Design notes:
  *  - **Never throws** — dumping the error must not compound the original error.
- *  - Secrets configured in `settings` are redacted before writing. Any future
- *    secret field on `BookMetasearchSettings` matching the SECRET_FIELDS heuristic
- *    (name ending in `Key`, `Token`, `Secret`, `Password`) is auto-redacted.
+ *  - Secrets are redacted before writing. Since 1.4.0 the key material lives
+ *    in `app.secretStorage` rather than in `settings`, so the values are read
+ *    back out of the keychain; the name-suffix heuristic over `settings` is
+ *    kept as a net for any future plaintext field.
  *  - File naming: `<errorDumpFolder>/YYYY-MM-DD HHMM - <kind>-<provider>.md`.
  *  - Returns the created TFile or null on any failure. Null is expected in
  *    tests where `app.vault.create` is stubbed.
@@ -29,22 +30,64 @@ export interface DumpErrorInput {
 const SECRET_SUFFIX_RE = /(Key|Token|Secret|Password)$/;
 
 /**
- * Detect secret-carrying setting fields by name convention and replace their
- * values in `text` with `***REDACTED***`. Very short values (< 6 chars) are
- * skipped since they're unlikely to be real secrets and might collide with
- * common words.
+ * Replace every known secret value in `text` with `***REDACTED***`.
+ *
+ * Two sources, because the keys moved. `values` carries what was read out of
+ * `app.secretStorage` (see `collectSecretValues`), and the loop over
+ * `settings` catches any field still holding key material by name convention.
+ * Very short values (< 6 chars) are skipped since they're unlikely to be real
+ * secrets and might collide with common words.
  */
 export function redactSecrets(
 	text: string,
 	settings: BookMetasearchSettings,
+	values: readonly string[] = [],
 ): string {
 	let out = text;
+	const candidates = [...values];
 	for (const [key, value] of Object.entries(settings)) {
 		if (typeof value !== 'string') continue;
 		if (!SECRET_SUFFIX_RE.test(key)) continue;
+		candidates.push(value);
+	}
+	for (const value of candidates) {
 		if (value.length < 6) continue;
 		const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 		out = out.replace(new RegExp(escaped, 'g'), '***REDACTED***');
+	}
+	return out;
+}
+
+/**
+ * Reads the plugin's own configured secrets out of the keychain so the dump
+ * can hide them.
+ *
+ * Only the four this plugin points at — redacting every entry in the vault's
+ * keychain would hide other plugins' tokens too, but it would also mean
+ * reading secrets this plugin has no business touching.
+ *
+ * Never throws: a keychain read must not break the dump that is trying to
+ * report an unrelated failure.
+ */
+export function collectSecretValues(
+	app: App,
+	settings: BookMetasearchSettings,
+): string[] {
+	const ids = [
+		settings.yes24SecretId,
+		settings.aladinSecretId,
+		settings.kakaoSecretId,
+		settings.googleBooksSecretId,
+	];
+	const out: string[] = [];
+	for (const id of ids) {
+		if (!id) continue;
+		try {
+			const value = app.secretStorage.getSecret(id);
+			if (typeof value === 'string') out.push(value);
+		} catch {
+			// Ignore — a missing or unreadable entry just means nothing to hide.
+		}
 	}
 	return out;
 }
@@ -90,6 +133,7 @@ function renderNote(
 	input: DumpErrorInput,
 	settings: BookMetasearchSettings,
 	now: Date,
+	secrets: readonly string[],
 ): string {
 	const err = stringifyError(input.error);
 	const lines: string[] = [];
@@ -107,7 +151,7 @@ function renderNote(
 	lines.push('## Error');
 	lines.push('');
 	lines.push('```');
-	lines.push(redactSecrets(err.message, settings));
+	lines.push(redactSecrets(err.message, settings, secrets));
 	if (err.code) lines.push(`code: ${err.code}`);
 	lines.push('```');
 	if (err.stack) {
@@ -115,7 +159,7 @@ function renderNote(
 		lines.push('### Stack');
 		lines.push('');
 		lines.push('```');
-		lines.push(redactSecrets(err.stack, settings));
+		lines.push(redactSecrets(err.stack, settings, secrets));
 		lines.push('```');
 	}
 	if (input.context && Object.keys(input.context).length > 0) {
@@ -123,7 +167,7 @@ function renderNote(
 		lines.push('## Context');
 		lines.push('');
 		lines.push('```json');
-		lines.push(redactSecrets(JSON.stringify(input.context, null, 2), settings));
+		lines.push(redactSecrets(JSON.stringify(input.context, null, 2), settings, secrets));
 		lines.push('```');
 	}
 	lines.push('');
@@ -157,7 +201,7 @@ export async function dumpErrorNote(
 			n += 1;
 			if (n > 20) break;
 		}
-		const content = renderNote(input, settings, now);
+		const content = renderNote(input, settings, now, collectSecretValues(app, settings));
 		const file = await app.vault.create(path, content);
 		return file;
 	} catch (e) {

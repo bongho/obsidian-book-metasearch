@@ -1,15 +1,15 @@
 import {
 	App,
-	ExtraButtonComponent,
 	Notice,
 	PluginSettingTab,
+	SecretComponent,
 	Setting,
-	TextComponent,
 } from 'obsidian';
 
 import type BookMetasearchPlugin from '../main';
 import { dumpErrorNote } from '../util/error-dump';
 import type { HealthStatus } from '../apis/base';
+import type { SecretIdField } from '../settings';
 
 /**
  * Called by every healthcheck button when the probe fails. Writes a redacted
@@ -36,35 +36,28 @@ async function reportHealthFailure(
 }
 
 /**
- * Turn a text input into a password-masked field with a click-to-reveal
- * toggle button. Values are still stored in plain text — this is UI
- * shoulder-surfing prevention, not encryption.
+ * Renders the keychain picker for a settings field that stores a
+ * `secretStorage` id, letting the user reuse a secret another plugin already
+ * holds or create a new one.
+ *
+ * It goes through `addComponent` rather than a dedicated `addSecret` because
+ * `SecretComponent` needs the `App` instance to reach the keychain, which the
+ * `addX` callbacks do not supply.
  */
-function maskAsSecret(text: TextComponent): void {
-	text.inputEl.type = 'password';
-	text.inputEl.autocomplete = 'off';
-	text.inputEl.spellcheck = false;
-}
-
-function attachRevealButton(
+function addSecretPicker(
 	setting: Setting,
-	text: TextComponent,
-): ExtraButtonComponent {
-	let shown = false;
-	let button!: ExtraButtonComponent;
-	setting.addExtraButton((btn) => {
-		button = btn;
-		btn
-			.setIcon('eye')
-			.setTooltip('값 표시')
-			.onClick(() => {
-				shown = !shown;
-				text.inputEl.type = shown ? 'text' : 'password';
-				btn.setIcon(shown ? 'eye-off' : 'eye');
-				btn.setTooltip(shown ? '값 숨김' : '값 표시');
-			});
+	plugin: BookMetasearchPlugin,
+	field: SecretIdField,
+): void {
+	setting.addComponent((el) => {
+		const component = new SecretComponent(plugin.app, el);
+		component.setValue(plugin.settings[field]);
+		component.onChange(async (value) => {
+			plugin.settings[field] = value ?? '';
+			await plugin.saveSettings();
+		});
+		return component;
 	});
-	return button;
 }
 
 const TTB_ISSUE_URL = 'https://www.aladin.co.kr/ttb/wblog_manage.aspx';
@@ -153,24 +146,12 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 		new Setting(containerEl).setName("Providers").setHeading();
 
 		{
-			let inputRef!: TextComponent;
 			const setting = new Setting(containerEl)
 				.setName('YES24 API key')
 				.setDesc(
 					'YES24 Open API 키. 예스24 계정으로 로그인해 약관에 동의하면 즉시 발급됩니다. 기본키 한도는 하루 20,000회.',
-				)
-				.addText((text) => {
-					inputRef = text;
-					maskAsSecret(text);
-					text
-						.setPlaceholder('발급받은 API Key')
-						.setValue(this.plugin.settings.yes24ApiKey)
-						.onChange(async (value) => {
-							this.plugin.settings.yes24ApiKey = value.trim();
-							await this.plugin.saveSettings();
-						});
-				});
-			attachRevealButton(setting, inputRef);
+				);
+			addSecretPicker(setting, this.plugin, 'yes24SecretId');
 			setting.addButton((btn) =>
 				btn
 					.setButtonText('발급 페이지 열기')
@@ -206,24 +187,12 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 			);
 
 		{
-			let inputRef!: TextComponent;
 			const setting = new Setting(containerEl)
 				.setName('Aladin TTB key')
 				.setDesc(
 					'⚠️ 알라딘 오픈 API는 2026-10-30에 종료됩니다(신규 키 발급은 2026-09-04 마감). 기존 키는 종료일까지 동작하며, 검색 기본값은 YES24로 옮겨졌습니다.',
-				)
-				.addText((text) => {
-					inputRef = text;
-					maskAsSecret(text);
-					text
-						.setPlaceholder('ttbXXXXXXXXX')
-						.setValue(this.plugin.settings.aladinTtbKey)
-						.onChange(async (value) => {
-							this.plugin.settings.aladinTtbKey = value.trim();
-							await this.plugin.saveSettings();
-						});
-				});
-			attachRevealButton(setting, inputRef);
+				);
+			addSecretPicker(setting, this.plugin, 'aladinSecretId');
 			setting.addButton((btn) =>
 				btn
 					.setButtonText('발급 페이지 열기')
@@ -259,22 +228,10 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 			);
 
 		{
-			let inputRef!: TextComponent;
 			const setting = new Setting(containerEl)
 				.setName('Kakao REST API key')
-				.setDesc('Kakao Developers 애플리케이션의 REST API 키. 즉시 발급, 승인 대기 없음.')
-				.addText((text) => {
-					inputRef = text;
-					maskAsSecret(text);
-					text
-						.setPlaceholder('a1b2c3d4...')
-						.setValue(this.plugin.settings.kakaoRestApiKey)
-						.onChange(async (value) => {
-							this.plugin.settings.kakaoRestApiKey = value.trim();
-							await this.plugin.saveSettings();
-						});
-				});
-			attachRevealButton(setting, inputRef);
+				.setDesc('Kakao Developers 애플리케이션의 REST API 키. 즉시 발급, 승인 대기 없음.');
+			addSecretPicker(setting, this.plugin, 'kakaoSecretId');
 			setting.addButton((btn) =>
 				btn
 					.setButtonText('발급 페이지 열기')
@@ -309,25 +266,13 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 			);
 
 		{
-			let inputRef!: TextComponent;
 			const setting = new Setting(containerEl)
 				.setName('Google Books API key')
 				.setDesc(
 					'선택 사항 — 없어도 검색은 되지만 rate limit이 낮습니다. ' +
 						'Google Cloud Console에서 Books API 활성화 후 발급받으면 1,000/day 무료.',
-				)
-				.addText((text) => {
-					inputRef = text;
-					maskAsSecret(text);
-					text
-						.setPlaceholder('AIza...')
-						.setValue(this.plugin.settings.googleBooksApiKey)
-						.onChange(async (value) => {
-							this.plugin.settings.googleBooksApiKey = value.trim();
-							await this.plugin.saveSettings();
-						});
-				});
-			attachRevealButton(setting, inputRef);
+				);
+			addSecretPicker(setting, this.plugin, 'googleBooksSecretId');
 			setting.addButton((btn) =>
 				btn
 					.setButtonText('Console 열기')
