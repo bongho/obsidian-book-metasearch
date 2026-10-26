@@ -41,11 +41,11 @@
 		"eslint": "^10.13.0",
 		"eslint-plugin-obsidianmd": "^0.4.2",
 		"globals": "^17.13.0",
-		"happy-dom": "^21.0.3",
+		"happy-dom": "^21.0.4",
 		"jiti": "^2.6.1",
 		"obsidian": "^1.14.4",
 		"typescript": "^5.8.3",
-		"typescript-eslint": "^8.71.2",
+		"typescript-eslint": "^8.72.0",
 		"vitest": "^5.0.0"
 	}
 }
