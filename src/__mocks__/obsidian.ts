@@ -70,6 +70,7 @@ export class PluginSettingTab {
 	constructor(public app: any, public plugin: unknown) {}
 	display(): void {}
 	hide(): void {}
+	update(): void {}
 }
 
 export class Setting {
@@ -93,16 +94,6 @@ export class Setting {
 		return this;
 	}
 	addComponent(_cb: (el: any) => any): this {
-		return this;
-	}
-}
-
-export class SecretComponent {
-	constructor(public app: any, public containerEl: any) {}
-	setValue(_value: string): this {
-		return this;
-	}
-	onChange(_cb: (value: string | null) => unknown): this {
 		return this;
 	}
 }
