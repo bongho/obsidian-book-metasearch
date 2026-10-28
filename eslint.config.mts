@@ -72,8 +72,13 @@ export default defineConfig(
 		files: ['src/**/*.test.ts', 'src/__mocks__/**/*.ts'],
 		rules: {
 			'@typescript-eslint/no-explicit-any': 'off',
+			'@typescript-eslint/no-unsafe-member-access': 'off',
 			'@typescript-eslint/no-unused-vars': 'off',
 			'no-console': 'off',
+			// These mocks stand in for the Obsidian globals the rules below
+			// steer plugin code toward, so they have to build the real thing.
+			'obsidianmd/no-global-this': 'off',
+			'obsidianmd/prefer-create-el': 'off',
 		},
 	},
 );

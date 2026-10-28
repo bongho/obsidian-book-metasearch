@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The settings tab is declarative, so its rows appear in Obsidian's settings
+  search.** The tab returns `getSettingDefinitions()` instead of building rows
+  in `display()`. On Obsidian 1.13 and later the framework renders those
+  definitions and indexes every one of them for search, which `display()`
+  never did.
+
+  API keys bind to the `secret` control, which stores the `app.secretStorage`
+  id that 1.4.0 already moved them to. The healthcheck buttons and the Naver
+  migration helper keep their buttons, through `render` rows.
+
+  The "발급 페이지 열기" button beside each key field becomes a link in that
+  field's description, because a declarative row gives its one control slot to
+  the key itself.
+
+  Raises `minAppVersion` from 1.11.4 to **1.13.2**, the release that added the
+  secret control. Installs on an older Obsidian stop being offered updates.
+
+  Closes #11, blocked since the v1.2.2 rollback: adopting the declarative API
+  used to mean losing key masking and the healthcheck buttons, because it
+  replaces `display()` rather than composing with it. Both holes are closed
+  upstream now.
+
 ## [1.4.0] - 2026-10-19
 
 ### Changed

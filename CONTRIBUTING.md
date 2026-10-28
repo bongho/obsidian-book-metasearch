@@ -136,9 +136,12 @@ local-push workaround — run `gh auth refresh -s workflow` first.
    - `searchByISBN(isbn) → Book | null`
 2. Register in `src/main.ts` `onload()` and add the id to `priorityOrder`
    default in `src/settings.ts`.
-3. Add a settings UI card in `src/ui/settings-tab.ts`. Key material goes
-   through `addSecretPicker()` into `app.secretStorage`; the settings field
-   stores the secret's id, never the key. Add a healthcheck button beside it.
+3. Add a settings UI card to `getSettingDefinitions()` in
+   `src/ui/settings-tab.ts` — the tab is declarative, so a row is data, not a
+   `new Setting(...)` call. Key material binds through
+   `control: { type: 'secret' }`, which stores the `app.secretStorage` id in
+   the settings field, never the key. Add the provider to `PROVIDERS` and its
+   healthcheck row comes with it.
 4. Every HTTP request must use Obsidian's `requestUrl()` — not `fetch()` —
    for CORS transparency and reliability.
 5. Reuse pure utilities in `src/util/` (`isbn.ts`, `html.ts`,

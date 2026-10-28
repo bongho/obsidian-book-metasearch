@@ -26,6 +26,7 @@ From the community plugin directory:
 - **Cover image download** to a configurable folder
 - **37 ISO 639-1 locale codes** for cross-provider language filtering
 - **API keys kept in Obsidian's keychain**, not in the plugin's `data.json`
+- **Settings are searchable** from Obsidian's own settings search
 - **Cover thumbnails** in search results (opt-in)
 - **Naver EOL migration**: opt-in helper detects an existing `obsidian-book-search-plugin` config and guides users through Aladin setup
 
