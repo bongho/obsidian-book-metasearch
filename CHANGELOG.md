@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The settings tab's intro line stopped describing a sprint that ended.**
+  It said "Sprint S1 in progress, only Aladin is wired up so far" and
+  listed Aladin first, both untrue since YES24 became the default provider.
+  It now names the five providers and the default order.
+
 ### Changed
 
 - **The settings tab is declarative, so its rows appear in Obsidian's settings

@@ -311,8 +311,9 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 			{
 				name: 'Book Metasearch',
 				desc:
-					'Metasearch across Aladin, Kakao, Google Books, and Open Library. ' +
-					'Sprint S1 in progress — only Aladin is wired up so far.',
+					'Metasearch across YES24, Kakao, Google Books, Open Library, ' +
+					'and Aladin. Korean-first with foreign fallback; the default ' +
+					'order is YES24, Kakao, Google Books, then Open Library.',
 				searchable: false,
 			},
 			{
