@@ -270,6 +270,8 @@ describe('GoogleBooksProvider normalization', () => {
 		expect(book?.coverUrl).toContain('printsec=frontcover');
 		expect(book?.coverUrl).not.toContain('zoom=');
 		expect(book?.coverUrl).not.toContain('edge=curl');
+		// Dropping two parameters used to leave their separators behind.
+		expect(book?.coverUrl).not.toContain('&&');
 		expect(book?.coverUrl?.startsWith('https://')).toBe(true);
 	});
 

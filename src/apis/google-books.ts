@@ -224,6 +224,9 @@ function pickBestCover(links: GBookVolumeInfo['imageLinks']): string | undefined
 	const upgraded = raw
 		.replace(/([?&])zoom=\d+/g, '$1')
 		.replace(/([?&])edge=curl/g, '$1')
+		// Both replacements leave their separator behind, so a URL carrying each
+		// of them ends up with a run of `&`.
+		.replace(/&{2,}/g, '&')
 		.replace(/\?&/, '?')
 		.replace(/[?&]$/, '');
 	// http → https (Obsidian requires https)

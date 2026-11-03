@@ -201,8 +201,19 @@ describe('OpenLibraryProvider.healthcheck', () => {
 		});
 	});
 
-	it('reports a failure as NETWORK, since there is no key to blame', async () => {
+	it('surfaces the provider error code instead of blaming the connection', async () => {
 		mockRequest.mockResolvedValue(respond(503, 'down'));
+
+		await expect(new OpenLibraryProvider().healthcheck()).resolves.toMatchObject({
+			ok: false,
+			code: 'UNKNOWN',
+		});
+	});
+
+	it('falls back to NETWORK when the request never produced a response', async () => {
+		// There is no key to blame here, so an unclassified failure is the
+		// connection by elimination.
+		mockRequest.mockRejectedValue(new Error('net::ERR_NAME_NOT_RESOLVED'));
 
 		await expect(new OpenLibraryProvider().healthcheck()).resolves.toMatchObject({
 			ok: false,
