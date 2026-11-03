@@ -65,7 +65,14 @@ export default class BookMetasearchPlugin extends Plugin {
 		// Registration order is the fallback order for providers absent from
 		// `priorityOrder`; YES24 leads now that Aladin is winding down.
 		this.registry.register(this.yes24);
-		this.registry.register(this.aladin);
+		// Registering a retired provider would put a dead request in front of
+		// every search by anyone who still has a TTB Key stored, and the failure
+		// is silent: `sequential` moves on and `fanout` files the error in a
+		// field the search modal never reads. The provider object stays, because
+		// the used-price command and the settings card both still hold it.
+		if (!isAladinApiRetired(new Date())) {
+			this.registry.register(this.aladin);
+		}
 		this.registry.register(this.kakao);
 		this.registry.register(this.google);
 		this.registry.register(this.openLibrary);
