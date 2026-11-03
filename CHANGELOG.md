@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A search that failed at every provider showed an empty list and said
+  nothing.** Fanout catches each provider's failure into a field the search
+  modal never read, and unlike sequential search it did not even log one, so
+  an expired key was indistinguishable from a book nobody stocks. A fanout
+  search that comes back with nothing now names the providers that failed and
+  reports the first reason.
 - **The Aladin settings card and the settings intro still described the
   shutdown as upcoming.** Both now say it happened, and the intro lists the
   four providers search actually uses.

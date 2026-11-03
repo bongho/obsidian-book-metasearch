@@ -1,7 +1,7 @@
 import { App, Notice, SuggestModal } from 'obsidian';
 
 import type { Book, SearchOptions } from '../apis/base';
-import type { ProviderRegistry } from '../apis/registry';
+import type { ProviderRegistry, ProviderResult } from '../apis/registry';
 import type { BookMetasearchSettings } from '../settings';
 
 export type BookPickHandler = (book: Book) => void | Promise<void>;
@@ -67,6 +67,10 @@ export class BookSearchModal extends SuggestModal<Book> {
 					this.settings.priorityOrder,
 				);
 				books = dedupeByIsbn(results.flatMap((r) => r.books));
+				// `fanout` catches each provider's failure into `error` so one dead
+				// provider cannot sink the search. The cost is that a search failing
+				// everywhere looks exactly like a book nobody stocks.
+				if (books.length === 0) reportFailures(results);
 			} else {
 				books = await this.registry.sequential(
 					trimmed,
@@ -164,6 +168,22 @@ export class BookSearchModal extends SuggestModal<Book> {
  * when ISBN is missing. First occurrence wins — priorityOrder governs which
  * provider surfaces first.
  */
+/**
+ * Says which providers failed, but only once a fanout search has nothing to
+ * show. A partial failure still produced results, so naming it there would be
+ * noise over a list the user can already read.
+ */
+function reportFailures(results: readonly ProviderResult[]): void {
+	const failed = results.filter((r) => r.error);
+	const first = failed[0];
+	if (!first) return;
+	for (const r of failed) {
+		console.warn(`[book-metasearch] ${r.providerId} failed`, r.error);
+	}
+	const names = failed.map((r) => r.providerId).join(', ');
+	new Notice(`검색 실패 (${names}): ${first.error ?? ''}`);
+}
+
 function dedupeByIsbn(books: readonly Book[]): Book[] {
 	const seen = new Set<string>();
 	const out: Book[] = [];

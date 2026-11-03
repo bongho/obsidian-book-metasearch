@@ -48,6 +48,10 @@ export class Modal {
 }
 
 export class SuggestModal<T> extends Modal {
+	// Real `SuggestModal` chrome. No-ops here, but they have to exist: the
+	// plugin's modals call them from their constructors.
+	setPlaceholder(_text: string): void {}
+	setInstructions(_instructions: unknown[]): void {}
 	getSuggestions(_query: string): T[] | Promise<T[]> {
 		return [];
 	}
