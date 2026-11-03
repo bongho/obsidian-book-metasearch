@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The Aladin settings card and the settings intro still described the
+  shutdown as upcoming.** Both now say it happened, and the intro lists the
+  four providers search actually uses.
+
+### Changed
+
+- **Aladin is no longer registered for search.** Its Open API stopped serving
+  existing TTB Keys on 2026-10-30, so anyone with a key stored was paying for
+  a dead request in front of every search, and the failure was silent:
+  sequential search moves to the next provider, and fanout files the error in
+  a field the search modal never reads. The provider itself stays, because the
+  used-book price command and the settings card still use it.
+
 ## [1.5.1] - 2026-11-03
 
 ### Fixed

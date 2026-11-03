@@ -144,7 +144,7 @@ const PROVIDERS: readonly ProviderCard[] = [
 		label: 'Aladin',
 		keyName: 'Aladin TTB key',
 		keyDesc:
-			'⚠️ 알라딘 오픈 API는 2026-10-30에 종료됩니다(신규 키 발급은 2026-09-04 마감). 기존 키는 종료일까지 동작하며, 검색 기본값은 YES24로 옮겨졌습니다.',
+			'⚠️ 알라딘 오픈 API는 2026-10-30에 종료됐습니다. 기존 키도 더는 동작하지 않아 검색에서 제외되고 중고가 조회도 막혔습니다. 검색 기본값은 YES24입니다.',
 		secretKey: 'aladinSecretId',
 		issueUrl: TTB_ISSUE_URL,
 		issueLabel: '발급 페이지 열기',
@@ -311,9 +311,10 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 			{
 				name: 'Book Metasearch',
 				desc:
-					'Metasearch across YES24, Kakao, Google Books, Open Library, ' +
-					'and Aladin. Korean-first with foreign fallback; the default ' +
-					'order is YES24, Kakao, Google Books, then Open Library.',
+					'Metasearch across YES24, Kakao, Google Books, and Open ' +
+					'Library, in that default order. Korean-first with foreign ' +
+					'fallback. Aladin left the search path when its Open API shut ' +
+					'down on 2026-10-30.',
 				searchable: false,
 			},
 			{
