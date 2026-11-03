@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Open Library's Healthcheck reported every failure as a network problem.**
+  A 5xx or an unreadable body is already classified by the search path, so the
+  button now shows that code instead, the way the other three providers
+  already do.
+- **Google Books cover URLs carried a run of `&`.** Stripping `zoom` and
+  `edge=curl` each left its separator behind. A browser ignores the empty
+  parameters, but the URL is written into the note's frontmatter.
+
 ## [1.5.0] - 2026-10-29
 
 ### Fixed

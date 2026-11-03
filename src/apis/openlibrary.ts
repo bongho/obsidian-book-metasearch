@@ -65,6 +65,11 @@ export class OpenLibraryProvider implements BookProvider {
 			await this.searchByQuery('test', { maxResults: 1 });
 			return { ok: true };
 		} catch (e) {
+			// A 5xx or an unreadable body is already classified by `searchByQuery`;
+			// reporting it as NETWORK would blame the connection for an upstream fault.
+			if (e instanceof ProviderError) {
+				return { ok: false, code: e.code, message: e.message };
+			}
 			return {
 				ok: false,
 				code: 'NETWORK',
