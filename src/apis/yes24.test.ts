@@ -474,3 +474,39 @@ describe('Yes24Provider.enrich', () => {
 		expect(mockRequest).not.toHaveBeenCalled();
 	});
 });
+
+describe('Yes24Provider.searchByISBN', () => {
+	beforeEach(() => {
+		mockRequest.mockReset();
+	});
+
+	it('looks the ISBN up on the detail endpoint with the punctuation stripped', async () => {
+		okWith([SAPIENS]);
+
+		const book = await keyedProvider().searchByISBN('978-89-349-7246-4');
+
+		const url = lastUrl();
+		expect(url.pathname).toBe('/v1/goods/itemDetail');
+		expect(url.searchParams.get('searchType')).toBe('ISBN13');
+		expect(url.searchParams.get('query')).toBe('9788934972464');
+		// The caller gets a full record, not the lean search-result shape.
+		expect(book?.pageCount).toBe(636);
+		expect(book?.provider).toBe('yes24');
+	});
+
+	it('answers null rather than throwing when the ISBN has no match', async () => {
+		// 404 + SEARCH_001 is YES24's way of saying "no rows", not "failed".
+		mockRequest.mockResolvedValue(respond(404, { errorCode: 'SEARCH_001' }));
+
+		await expect(keyedProvider().searchByISBN('9788934972464')).resolves.toBeNull();
+	});
+
+	it('still fails loudly on a real error', async () => {
+		// Unlike enrich(), this one has no book to hand back, so swallowing the
+		// error here would surface as "그런 책 없음" on an expired key.
+		mockRequest.mockResolvedValue(respond(401, { message: '유효하지 않은 키' }));
+
+		const err = await rejection(keyedProvider().searchByISBN('9788934972464'));
+		expect((err as ProviderError).code).toBe('AUTH_INVALID');
+	});
+});
