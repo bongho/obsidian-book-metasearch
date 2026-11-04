@@ -190,8 +190,10 @@ function descWithLink(
 	text: string,
 	url: string,
 	label: string,
+	warning?: string,
 ): DocumentFragment {
 	return createFragment((frag) => {
+		if (warning) frag.createEl('strong', { text: `${warning} ` });
 		frag.appendText(`${text} `);
 		frag.createEl('a', {
 			text: label,
@@ -199,6 +201,29 @@ function descWithLink(
 			attr: { target: '_blank', rel: 'noopener' },
 		});
 	});
+}
+
+/**
+ * Warns when this machine holds a secret's id but nothing behind it.
+ *
+ * `data.json` stores the id and travels with a synced vault;
+ * `app.secretStorage` stores the value and is local to the machine. So on a
+ * second device the row renders as configured, `secret()` resolves to an empty
+ * string, and every search through that provider fails on AUTH_MISSING.
+ * `migrateSecrets` says this once in a Notice the user dismissed long ago, and
+ * nothing repeated it until now.
+ */
+function missingValueWarning(
+	plugin: BookMetasearchPlugin,
+	card: ProviderCard,
+): string | undefined {
+	const id = plugin.settings[card.secretKey];
+	if (!id || plugin.secret(id)) return undefined;
+	return (
+		'⚠️ 이 기기에는 키 값이 저장돼 있지 않습니다. '
+		+ '키체인은 기기마다 따로라 볼트를 동기화해도 따라오지 않습니다. '
+		+ '아래에 키를 다시 입력해 주세요.'
+	);
 }
 
 /**
@@ -301,7 +326,12 @@ export class BookMetasearchSettingTab extends PluginSettingTab {
 		const providerItems: SettingGroupItem[] = PROVIDERS.flatMap((card) => [
 			{
 				name: card.keyName,
-				desc: descWithLink(card.keyDesc, card.issueUrl, card.issueLabel),
+				desc: descWithLink(
+					card.keyDesc,
+					card.issueUrl,
+					card.issueLabel,
+					missingValueWarning(this.plugin, card),
+				),
 				control: { type: 'secret', key: card.secretKey },
 			} satisfies SettingGroupItem,
 			healthcheckRow(this.plugin, card),

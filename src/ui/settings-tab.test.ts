@@ -14,7 +14,11 @@ import type BookMetasearchPlugin from '../main';
  */
 
 /** Just enough of the plugin for the definitions and the storage bridge. */
-function tabWith(overrides: Partial<BookMetasearchSettings> = {}): {
+function tabWith(
+	overrides: Partial<BookMetasearchSettings> = {},
+	/** Stands in for `app.secretStorage`: ids absent here resolve to ''. */
+	secrets: Record<string, string> = {},
+): {
 	tab: BookMetasearchSettingTab;
 	settings: BookMetasearchSettings;
 	saves: number;
@@ -26,6 +30,7 @@ function tabWith(overrides: Partial<BookMetasearchSettings> = {}): {
 	const state = { saves: 0 };
 	const plugin = {
 		settings,
+		secret: (id: string) => secrets[id] ?? '',
 		saveSettings: async () => {
 			state.saves += 1;
 		},
@@ -141,5 +146,76 @@ describe('BookMetasearchSettingTab control storage', () => {
 		await state.tab.setControlValue('somethingRemoved', 'x');
 		expect('somethingRemoved' in state.settings).toBe(false);
 		expect(state.saves).toBe(0);
+	});
+});
+
+/** The description text of the row with this exact name, flattened. */
+function descOf(items: readonly unknown[], name: string): string {
+	for (const item of items) {
+		if (typeof item !== 'object' || item === null) continue;
+		const record = item as Record<string, unknown>;
+		if (Array.isArray(record.items)) {
+			const nested = descOf(record.items, name);
+			if (nested) return nested;
+		}
+		if (record.name !== name) continue;
+		const desc = record.desc;
+		if (typeof desc === 'string') return desc;
+		if (desc && typeof desc === 'object' && 'textContent' in desc) {
+			return (desc as { textContent: string | null }).textContent ?? '';
+		}
+	}
+	return '';
+}
+
+/**
+ * `data.json` carries a secret's id and travels with a synced vault, while
+ * `app.secretStorage` carries the value and stays on the machine. The row has
+ * to tell those two apart or a second device shows a configured key that every
+ * search then fails on.
+ */
+describe('a secret id with no value behind it', () => {
+	it('warns on the row whose value this machine is missing', () => {
+		const { tab } = tabWith({ yes24SecretId: 'bookmetasearchyes24' });
+
+		const desc = descOf(tab.getSettingDefinitions(), 'YES24 API key');
+		expect(desc).toContain('이 기기에는');
+		// The original description has to survive alongside the warning.
+		expect(desc).toContain('YES24 Open API');
+	});
+
+	it('stays quiet once the value is stored on this machine', () => {
+		const { tab } = tabWith(
+			{ yes24SecretId: 'bookmetasearchyes24' },
+			{ bookmetasearchyes24: 'a-real-key' },
+		);
+
+		expect(descOf(tab.getSettingDefinitions(), 'YES24 API key')).not.toContain(
+			'이 기기에는',
+		);
+	});
+
+	it('stays quiet when no key was ever configured', () => {
+		// An empty id is "not configured", which the row already conveys.
+		const { tab } = tabWith();
+
+		expect(descOf(tab.getSettingDefinitions(), 'YES24 API key')).not.toContain(
+			'이 기기에는',
+		);
+	});
+
+	it('warns only on the provider that is missing one', () => {
+		const { tab } = tabWith({
+			yes24SecretId: 'bookmetasearchyes24',
+			kakaoSecretId: 'bookmetasearchkakao',
+		}, { bookmetasearchkakao: 'a-real-key' });
+
+		const defs = tab.getSettingDefinitions();
+		const kakao = descOf(defs, 'Kakao REST API key');
+		expect(descOf(defs, 'YES24 API key')).toContain('이 기기에는');
+		// A row name that matches nothing returns '', which would pass the
+		// negative assertion for the wrong reason.
+		expect(kakao).not.toBe('');
+		expect(kakao).not.toContain('이 기기에는');
 	});
 });
