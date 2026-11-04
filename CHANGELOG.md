@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A provider key could look configured while this machine had nothing behind
+  it.** `data.json` stores the key's id and travels with a synced vault, while
+  the keychain holding the value stays on the machine. On a second device the
+  row therefore read as configured, every search through that provider failed
+  on a missing key, and nothing said so. The key row now warns when the value
+  is absent here.
 - **A search that failed at every provider showed an empty list and said
   nothing.** Fanout catches each provider's failure into a field the search
   modal never read, and unlike sequential search it did not even log one, so
