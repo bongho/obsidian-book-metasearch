@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Aladin's connection test now names the shutdown instead of reporting an
+  unknown error.** The domain answers `errorCode 999` to every caller since
+  the Open API was retired, which could only be classified as UNKNOWN. The
+  check now answers from the retirement date itself, without spending a
+  request.
+
 ## [1.6.0] - 2026-11-04
 
 ### Fixed

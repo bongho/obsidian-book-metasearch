@@ -123,6 +123,18 @@ export class AladinProvider implements BookProvider {
 	constructor(private readonly ttbKey: () => string) {}
 
 	async healthcheck(): Promise<HealthStatus> {
+		// Answering before the key check, because once the service is gone the
+		// key cannot be the user's problem. It also keeps the probe from spending
+		// a request on a domain that now replies `errorCode 999` to everyone,
+		// which `mapErrorToHealth` can only file as UNKNOWN.
+		if (isAladinApiRetired(new Date())) {
+			return {
+				ok: false,
+				code: 'API_NOT_REGISTERED',
+				message: `알라딘 오픈 API는 ${ALADIN_API_RETIRED_ON}에 종료됐습니다. TTB Key가 유효해도 더는 조회할 수 없습니다.`,
+				docsUrl: 'https://www.aladin.co.kr/ttb/wblog_manage.aspx',
+			};
+		}
 		const key = this.ttbKey();
 		if (!key) {
 			return {
