@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-11-04
+
 ### Fixed
 
 - **A provider key could look configured while this machine had nothing behind
@@ -491,7 +493,8 @@ dedupe + Reading Log), M2 (citation insert), M3 (Aladin used-price), and M4
   `obsidian-book-search-plugin` config and guides users through Aladin
   setup.
 
-[Unreleased]: https://github.com/bongho/obsidian-book-metasearch/compare/1.5.1...HEAD
+[Unreleased]: https://github.com/bongho/obsidian-book-metasearch/compare/1.6.0...HEAD
+[1.6.0]: https://github.com/bongho/obsidian-book-metasearch/compare/1.5.1...1.6.0
 [1.5.1]: https://github.com/bongho/obsidian-book-metasearch/compare/1.5.0...1.5.1
 [1.5.0]: https://github.com/bongho/obsidian-book-metasearch/compare/1.4.0...1.5.0
 [1.4.0]: https://github.com/bongho/obsidian-book-metasearch/compare/1.3.1...1.4.0
