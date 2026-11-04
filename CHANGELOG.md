@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **A sequential search that failed at every provider said nothing either.**
+  #69 closed this for fanout, the strategy the setting offers second;
+  sequential is the default. The registry dropped its failures instead of
+  collecting them, so there was nothing for the search modal to report. Both
+  strategies now return the same shape and the modal treats them alike.
+
 ### Changed
 
 - **Aladin's connection test now names the shutdown instead of reporting an

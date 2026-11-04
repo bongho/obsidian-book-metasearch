@@ -91,27 +91,36 @@ export class ProviderRegistry {
 	}
 
 	/**
-	 * Sequential fallback — try providers in order, return the first non-empty
-	 * result. Used in S1 with just Aladin registered.
+	 * Sequential fallback: try providers in order and stop at the first
+	 * non-empty result. Used in S1 with just Aladin registered.
 	 *
-	 * Silent per-provider failures move to the next provider; only the overall
-	 * loop completing empty returns an empty array.
+	 * A failure moves to the next provider rather than sinking the search, but
+	 * it is reported rather than dropped: the result carries one entry per
+	 * provider tried, so a caller that ends up with no books can say which ones
+	 * failed and why. Same shape as `fanout`, so callers treat both alike.
 	 */
 	async sequential(
 		query: string,
 		opts: SearchOptions,
 		order: string[],
-	): Promise<Book[]> {
+	): Promise<ProviderResult[]> {
 		const targets = this.resolveOrdered(order);
+		const out: ProviderResult[] = [];
 		for (const p of targets) {
 			try {
 				const books = await p.searchByQuery(query, opts);
-				if (books.length > 0) return books;
+				out.push({ providerId: p.id, books });
+				if (books.length > 0) return out;
 			} catch (e) {
 				console.warn(`[book-metasearch] ${p.id} failed, trying next`, e);
+				out.push({
+					providerId: p.id,
+					books: [],
+					error: e instanceof Error ? e.message : String(e),
+				});
 			}
 		}
-		return [];
+		return out;
 	}
 
 	/**
