@@ -12,16 +12,22 @@ vi.mock('obsidian', async (importOriginal) => {
 
 const noticed = vi.mocked(Notice);
 
-/** A registry that answers `fanout` with whatever the test hands it. */
+/** A registry that answers either strategy with whatever the test hands it. */
 function registryReturning(results: ProviderResult[]): ProviderRegistry {
-	return { fanout: vi.fn().mockResolvedValue(results) } as unknown as ProviderRegistry;
+	return {
+		fanout: vi.fn().mockResolvedValue(results),
+		sequential: vi.fn().mockResolvedValue(results),
+	} as unknown as ProviderRegistry;
 }
 
-function modalOver(results: ProviderResult[]): BookSearchModal {
+function modalOver(
+	results: ProviderResult[],
+	searchStrategy: 'fanout' | 'sequential' = 'fanout',
+): BookSearchModal {
 	return new BookSearchModal(
 		{} as never,
 		registryReturning(results),
-		{ ...DEFAULT_SETTINGS, searchStrategy: 'fanout' },
+		{ ...DEFAULT_SETTINGS, searchStrategy },
 		() => undefined,
 	);
 }
@@ -69,6 +75,51 @@ describe('BookSearchModal fanout failures', () => {
 		]).getSuggestions('존재하지 않는 책');
 
 		expect(books).toEqual([]);
+		expect(noticed).not.toHaveBeenCalled();
+	});
+});
+
+/**
+ * `sequential` is the default strategy, so this is the path most users are on.
+ * It stops at the first provider with results, which means a run that reports
+ * failures is a run where none of them had any.
+ */
+describe('BookSearchModal sequential failures', () => {
+	beforeEach(() => {
+		noticed.mockClear();
+	});
+
+	it('names the failed providers when none of them had results', async () => {
+		const books = await modalOver(
+			[
+				{ providerId: 'yes24', books: [], error: 'API Key가 만료되었습니다.' },
+				{ providerId: 'kakao', books: [], error: '인증 실패' },
+				{ providerId: 'openlibrary', books: [] },
+			],
+			'sequential',
+		).getSuggestions('사피엔스');
+
+		expect(books).toEqual([]);
+		expect(noticed).toHaveBeenCalledTimes(1);
+		const msg = (noticed.mock.calls[0]?.[0] ?? '') as string;
+		expect(msg).toContain('yes24');
+		expect(msg).toContain('API Key가 만료되었습니다.');
+		expect(msg).not.toContain('openlibrary');
+	});
+
+	it('stays quiet when a later provider picked up the search', async () => {
+		// The run stops at the first non-empty provider, so the earlier
+		// failure cost the user nothing.
+		const book = { title: '사피엔스', authors: [], provider: 'kakao' };
+		const books = await modalOver(
+			[
+				{ providerId: 'yes24', books: [], error: '인증 실패' },
+				{ providerId: 'kakao', books: [book] as never },
+			],
+			'sequential',
+		).getSuggestions('사피엔스');
+
+		expect(books).toHaveLength(1);
 		expect(noticed).not.toHaveBeenCalled();
 	});
 });

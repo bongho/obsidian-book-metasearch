@@ -59,25 +59,19 @@ export class BookSearchModal extends SuggestModal<Book> {
 				locale: this.settings.localePreference,
 			};
 
-			let books: Book[];
-			if (this.settings.searchStrategy === 'fanout') {
-				const results = await this.registry.fanout(
-					trimmed,
-					opts,
-					this.settings.priorityOrder,
-				);
-				books = dedupeByIsbn(results.flatMap((r) => r.books));
-				// `fanout` catches each provider's failure into `error` so one dead
-				// provider cannot sink the search. The cost is that a search failing
-				// everywhere looks exactly like a book nobody stocks.
-				if (books.length === 0) reportFailures(results);
-			} else {
-				books = await this.registry.sequential(
-					trimmed,
-					opts,
-					this.settings.priorityOrder,
-				);
-			}
+			const results =
+				this.settings.searchStrategy === 'fanout'
+					? await this.registry.fanout(trimmed, opts, this.settings.priorityOrder)
+					: await this.registry.sequential(
+							trimmed,
+							opts,
+							this.settings.priorityOrder,
+						);
+			const books = dedupeByIsbn(results.flatMap((r) => r.books));
+			// Both strategies catch each provider's failure so one dead provider
+			// cannot sink the search. The cost is that a search failing everywhere
+			// looks exactly like a book nobody stocks.
+			if (books.length === 0) reportFailures(results);
 			this.cache.set(trimmed, books);
 			return books;
 		} catch (e) {

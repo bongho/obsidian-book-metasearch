@@ -534,7 +534,7 @@ export default class BookMetasearchPlugin extends Plugin {
 					},
 					this.settings.priorityOrder,
 				);
-				book = results[0] ?? null;
+				book = results.flatMap((r) => r.books)[0] ?? null;
 			}
 			if (!book) {
 				new Notice('업데이트할 결과를 찾을 수 없습니다.');
