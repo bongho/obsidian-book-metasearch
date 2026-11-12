@@ -204,9 +204,20 @@ That's the whole release. **A version bump needs no PR to
 repo's own README, "the `manifest.json` in your repo will only be used to figure
 out the latest version. Actual files are fetched from your GitHub releases," and
 Obsidian "will look for your GitHub releases tagged identically to the version
-inside `manifest.json`". So publishing the release is what ships the update; the
-only things that need a PR over there are the initial listing and later changes
-to those five directory fields.
+inside `manifest.json`". So publishing the release is what ships the update.
+
+The initial listing and those five directory fields are a different matter, and
+the old answer — a PR against `community-plugins.json` — no longer works. That
+repo stopped accepting pull requests (`GET
+/repos/obsidianmd/obsidian-releases/pulls` returns 404) and the file is now a
+mirror generated from the portal at
+[community.obsidian.md](https://community.obsidian.md). Sign in there with the
+Obsidian account that owns the listing, open the plugin's page, and edit the
+field. Two things that cost time on 2026-11-12: the description is **not**
+synced from `manifest.json`, so shipping 1.6.1 with a rewritten manifest
+description changed nothing in the directory; and the `- This plugin has not
+been manually reviewed by Obsidian staff.` suffix is appended by the mirror
+generator, so don't paste it into the portal field.
 
 ## Filing bugs
 
