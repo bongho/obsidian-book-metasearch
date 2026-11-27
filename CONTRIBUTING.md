@@ -219,6 +219,18 @@ description changed nothing in the directory; and the `- This plugin has not
 been manually reviewed by Obsidian staff.` suffix is appended by the mirror
 generator, so don't paste it into the portal field.
 
+A third thing, found on 2026-11-24 after twelve days of a stale listing:
+the portal page holds **two** description fields. The short one at the
+top feeds the hero paragraph, the page's `meta` / `og` / `twitter`
+description tags, the generated `community-plugins.json` mirror, and the
+plugin browser inside Obsidian. The longer **About** box in the sidebar
+feeds none of them. Neither is labelled before you click it, so identify
+the field by what it already contains, and verify afterwards by reading
+the public page: if the `meta name="description"` tag still shows the old
+text, you edited About. `community-plugins.json` is regenerated hourly at
+about :20 UTC, so allow up to an hour before the directory and the in-app
+plugin list catch up.
+
 ## Filing bugs
 
 - If a healthcheck or migration fails, the plugin auto-writes a redacted
